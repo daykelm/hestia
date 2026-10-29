@@ -1,5 +1,6 @@
 """Deal list storage. Spread is estimated value minus asking price."""
 
+import json
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -35,6 +36,24 @@ def connect(path):
             status TEXT NOT NULL DEFAULT 'New',
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
+        )
+        """
+    )
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(deals)")}
+    if "metadata" not in columns:
+        conn.execute("ALTER TABLE deals ADD COLUMN metadata TEXT NOT NULL DEFAULT '{}'")
+    if "dedupe_key" not in columns:
+        conn.execute("ALTER TABLE deals ADD COLUMN dedupe_key TEXT")
+    conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS deals_dedupe ON deals(dedupe_key)")
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS media (
+            id INTEGER PRIMARY KEY,
+            deal_id INTEGER NOT NULL,
+            kind TEXT NOT NULL,
+            url TEXT NOT NULL,
+            source TEXT NOT NULL DEFAULT '',
+            UNIQUE(deal_id, url)
         )
         """
     )
@@ -99,6 +118,77 @@ def add_deal(conn, *, address, location, price, estimated_value, source, notes, 
     return cur.lastrowid
 
 
+def upsert_listing(conn, listing):
+    """One property row. A later pull from the same parcel updates the auction facts and leaves status alone."""
+    key = (listing.get("dedupe_key") or "").strip()
+    if not key:
+        raise ValueError("A collected property needs a parcel or address.")
+    address = (listing.get("address") or "").strip()
+    if not address:
+        raise ValueError("Add an address.")
+    metadata = listing.get("metadata") or {}
+    now = _now()
+    existing = conn.execute("SELECT id, metadata FROM deals WHERE dedupe_key = ?", (key,)).fetchone()
+    if existing:
+        merged = {}
+        try:
+            merged = json.loads(existing["metadata"] or "{}")
+        except json.JSONDecodeError:
+            merged = {}
+        merged.update(metadata)
+        conn.execute(
+            """
+            UPDATE deals
+            SET address = ?, location = ?, price = ?, source = ?, link = ?, metadata = ?, updated_at = ?
+            WHERE id = ?
+            """,
+            (
+                address,
+                (listing.get("location") or "").strip(),
+                listing.get("price"),
+                (listing.get("source") or "").strip(),
+                (listing.get("link") or "").strip(),
+                json.dumps(merged, separators=(",", ":")),
+                now,
+                existing["id"],
+            ),
+        )
+        deal_id = existing["id"]
+        state = "updated"
+    else:
+        cur = conn.execute(
+            """
+            INSERT INTO deals (
+                address, location, price, estimated_value, source, notes, link, status,
+                created_at, updated_at, metadata, dedupe_key
+            ) VALUES (?, ?, ?, NULL, ?, '', ?, 'New', ?, ?, ?, ?)
+            """,
+            (
+                address,
+                (listing.get("location") or "").strip(),
+                listing.get("price"),
+                (listing.get("source") or "").strip(),
+                (listing.get("link") or "").strip(),
+                now,
+                now,
+                json.dumps(metadata, separators=(",", ":")),
+                key,
+            ),
+        )
+        deal_id = cur.lastrowid
+        state = "added"
+    for item in listing.get("media") or []:
+        url = (item.get("url") or "").strip()
+        kind = item.get("kind") if item.get("kind") in ("image", "video") else ""
+        if url and kind:
+            conn.execute(
+                "INSERT OR IGNORE INTO media (deal_id, kind, url, source) VALUES (?, ?, ?, ?)",
+                (deal_id, kind, url, (listing.get("source") or "").strip()),
+            )
+    conn.commit()
+    return state
+
+
 def set_status(conn, deal_id, status):
     status = _clean_status(status)
     cur = conn.execute(
@@ -134,10 +224,19 @@ def list_deals(conn, *, status="", location="", source="", min_price=None, max_p
         query += " AND price IS NOT NULL AND price <= ?"
         args.append(max_price)
     rows = conn.execute(query, args).fetchall()
+    media_rows = conn.execute("SELECT deal_id, kind, url FROM media").fetchall()
+    media = {}
+    for item in media_rows:
+        media.setdefault(item["deal_id"], []).append({"kind": item["kind"], "url": item["url"]})
     deals = []
     for row in rows:
         deal = dict(row)
         deal["spread"] = spread(deal["price"], deal["estimated_value"])
+        try:
+            deal["metadata"] = json.loads(deal.get("metadata") or "{}")
+        except json.JSONDecodeError:
+            deal["metadata"] = {}
+        deal["media"] = media.get(deal["id"], [])
         deals.append(deal)
     deals.sort(key=lambda deal: (deal["spread"] is None, -(deal["spread"] or 0), deal["address"].lower()))
     return deals

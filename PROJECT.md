@@ -24,7 +24,7 @@ Me (the builder). This tool exists to serve my own deal flow first.
 3.⁠ ⁠*Data quality matters most* — Garbage in = wasted time
 4.⁠ ⁠*Minimal viable everything* — Only add features that remove real friction
 5.⁠ ⁠*Stay legal and clean* — Clear tracking, good records, proper contracts
-6.⁠ ⁠*Lives on my Umbrel* — The app and deal data run on my local server at `umbrel.local`, not on a public host
+6.⁠ ⁠*Lives on my Umbrel* — A separate Docker container on `umbrel.local`. Deal data sits on that disk. The Bitcoin node and the pool are left alone
 
 ## Out of Scope (for now)
 

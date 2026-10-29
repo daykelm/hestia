@@ -1,6 +1,7 @@
 """Local deal list. Run: python3 app.py"""
 
 import html
+import json
 import os
 from contextlib import closing
 from datetime import datetime
@@ -9,6 +10,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, quote, urlparse
 
 import deals
+import sources
 
 DB_PATH = Path(os.environ.get("HESTIA_DB", Path(__file__).resolve().parent / "data" / "hestia.db"))
 HOST = os.environ.get("HOST", "127.0.0.1")
@@ -137,20 +139,22 @@ def render_page(rows, filters, error="", draft=None):
         )
 
     if rows:
-        table = (
-            '<div class="table-wrap"><table>'
-            "<thead><tr>"
-            "<th>Address</th><th>Location</th>"
-            '<th class="num">Asking price</th><th class="num">Estimated value</th><th class="num">Spread</th>'
-            "<th>Status</th><th>Source</th><th>Updated</th>"
-            "</tr></thead><tbody>"
-            + "".join(body_rows)
-            + "</tbody></table></div>"
-        )
+        empty = ""
     elif any(filters.values()):
-        table = '<p class="empty">No deals match these filters.</p>'
+        empty = '<p class="empty" id="empty">No deals match these filters.</p>'
     else:
-        table = '<p class="empty">No deals on the desk. Add an address to start.</p>'
+        empty = '<p class="empty" id="empty">No deals on the desk. Add an address to start.</p>'
+    table = (
+        empty
+        + '<div class="table-wrap"><table>'
+        "<thead><tr>"
+        "<th>Address</th><th>Location</th>"
+        '<th class="num">Asking price</th><th class="num">Estimated value</th><th class="num">Spread</th>'
+        "<th>Status</th><th>Source</th><th>Updated</th>"
+        "</tr></thead><tbody>"
+        + "".join(body_rows)
+        + "</tbody></table></div>"
+    )
 
     error_html = f'<p class="error" role="alert">{html.escape(error)}</p>' if error else ""
     count = f"{len(rows)} deal" if len(rows) == 1 else f"{len(rows)} deals"
@@ -232,9 +236,17 @@ def render_page(rows, filters, error="", draft=None):
     border: 0;
     border-radius: 0;
     padding: 0.55rem 0.85rem;
+    min-height: 44px;
     cursor: pointer;
+    transition: background-color 160ms ease-out, transform 160ms ease-out;
   }}
   button:hover {{ background: var(--pine); }}
+  button:active {{ transform: scale(0.97); }}
+  :focus-visible {{ outline: 2px solid var(--pine); outline-offset: 2px; }}
+  @media (prefers-reduced-motion: reduce) {{
+    button {{ transition: none; }}
+    button:active {{ transform: none; }}
+  }}
   :focus-visible {{ outline: 2px solid var(--pine); outline-offset: 2px; }}
   .error {{ color: var(--loss); margin: 1rem 0 0; }}
   .filters-bar {{ display: flex; justify-content: space-between; align-items: center; margin-top: 0.6rem; }}
@@ -259,6 +271,10 @@ def render_page(rows, filters, error="", draft=None):
   }}
   .status-form button:hover {{ background: var(--paper); color: var(--ink); }}
   .empty {{ margin-top: 1.5rem; }}
+  .sources {{ margin: 1rem 0 0; color: var(--quiet); }}
+  .sources button {{ margin-right: 0.6rem; }}
+  .media {{ display: flex; gap: 0.4rem; margin-top: 0.35rem; }}
+  .media img, .media video {{ width: 96px; height: 72px; object-fit: cover; background: var(--paper); }}
   @media (max-width: 900px) {{
     form.add, form.filters {{ grid-template-columns: 1fr 1fr; }}
     form.add label:nth-child(6) {{ grid-column: 1 / -1; }}
@@ -274,8 +290,9 @@ def render_page(rows, filters, error="", draft=None):
 <main>
   <header>
     <h1>Hestia</h1>
-    <p class="count">{html.escape(count)}</p>
+    <p class="count" id="count">{html.escape(count)}</p>
   </header>
+  <p class="sources"><button type="button" id="collect">Collect South Florida sales</button> <span id="collect-note" role="status"></span></p>
   {error_html}
   <form class="add" method="post" action="/deals">
     {field("address", "Address", draft.get("address", ""))}
@@ -299,6 +316,102 @@ def render_page(rows, filters, error="", draft=None):
   <div class="filters-bar">{show_all}</div>
   {table}
 </main>
+<script>
+const money = (number) => {{
+  if (number === null || number === undefined) return "—";
+  const whole = Math.abs(number - Math.round(number)) < 0.001;
+  const body = Math.abs(number).toLocaleString("en-US", {{maximumFractionDigits: whole ? 0 : 2, minimumFractionDigits: whole ? 0 : 2}});
+  return (number < 0 ? "-$" : "$") + body;
+}};
+const safeLink = (url) => typeof url === "string" && (url.startsWith("https://") || url.startsWith("http://")) ? url : "";
+async function loadDeals() {{
+  const params = new URLSearchParams(location.search);
+  const response = await fetch("/api/deals?" + params.toString());
+  const rows = await response.json();
+  const body = document.querySelector("tbody");
+  const count = document.getElementById("count");
+  if (!body) return;
+  const empty = document.getElementById("empty");
+  if (empty) empty.hidden = rows.length > 0;
+  count.textContent = rows.length === 1 ? "1 deal" : rows.length + " deals";
+  body.replaceChildren();
+  for (const deal of rows) {{
+    const tr = document.createElement("tr");
+    const address = document.createElement("td");
+    const href = safeLink(deal.link);
+    const name = document.createElement(href ? "a" : "span");
+    name.textContent = deal.address;
+    if (href) name.href = href;
+    address.append(name);
+    const meta = deal.metadata || {{}};
+    const bits = [meta.sale_date, meta.parcel, meta.case].filter(Boolean).join(" · ");
+    if (bits || deal.notes) {{
+      const note = document.createElement("span");
+      note.className = "notes";
+      note.textContent = [bits, deal.notes].filter(Boolean).join(" — ");
+      address.append(note);
+    }}
+    for (const item of deal.media || []) {{
+      const box = address.querySelector(".media") || address.appendChild(Object.assign(document.createElement("div"), {{className: "media"}}));
+      if (item.kind === "image" && safeLink(item.url)) {{
+        const img = document.createElement("img");
+        img.src = item.url; img.alt = ""; img.loading = "lazy"; img.width = 96; img.height = 72;
+        box.append(img);
+      }} else if (item.kind === "video" && safeLink(item.url)) {{
+        const video = document.createElement("video");
+        video.src = item.url; video.controls = true; video.preload = "none"; video.width = 96; video.height = 72;
+        box.append(video);
+      }}
+    }}
+    const cell = (text, className) => {{
+      const td = document.createElement("td");
+      if (className) td.className = className;
+      td.textContent = text;
+      return td;
+    }};
+    const spread = cell(money(deal.spread), "num spread" + (deal.spread > 0 ? " gain" : deal.spread < 0 ? " loss" : ""));
+    const status = document.createElement("td");
+    const form = document.createElement("form");
+    form.className = "status-form";
+    form.method = "post";
+    form.action = "/deals/status";
+    const id = document.createElement("input");
+    id.type = "hidden"; id.name = "id"; id.value = deal.id;
+    const next = document.createElement("input");
+    next.type = "hidden"; next.name = "next"; next.value = location.pathname + location.search;
+    const select = document.createElement("select");
+    select.name = "status"; select.setAttribute("aria-label", "Status");
+    for (const name of {json.dumps(list(deals.STATUSES))}) {{
+      const option = document.createElement("option");
+      option.value = name; option.textContent = name; option.selected = name === deal.status;
+      select.append(option);
+    }}
+    const move = document.createElement("button");
+    move.type = "submit"; move.textContent = "Move";
+    form.append(id, next, select, move);
+    status.append(form);
+    tr.append(address, cell(deal.location || ""), cell(money(deal.price), "num"), cell(money(deal.estimated_value), "num"), spread, status, cell(deal.source || ""), cell(deal.updated_at ? new Date(deal.updated_at).toLocaleDateString(undefined, {{month: "short", day: "numeric"}}) : ""));
+    body.append(tr);
+  }}
+}}
+document.getElementById("collect").addEventListener("click", async () => {{
+  const note = document.getElementById("collect-note");
+  const button = document.getElementById("collect");
+  button.disabled = true;
+  note.textContent = "Collecting Broward, Miami-Dade, and Lee…";
+  try {{
+    const response = await fetch("/api/collect", {{method: "POST", headers: {{"Content-Type": "application/x-www-form-urlencoded"}}, body: ""}});
+    const result = await response.json();
+    note.textContent = result.notes.join(" ");
+    await loadDeals();
+  }} catch (error) {{
+    note.textContent = "The collect request did not finish.";
+  }} finally {{
+    button.disabled = false;
+  }}
+}});
+loadDeals();
+</script>
 </body>
 </html>
 """
@@ -307,6 +420,14 @@ def render_page(rows, filters, error="", draft=None):
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urlparse(self.path)
+        if parsed.path == "/api/deals":
+            raw, parsed_filters, error = _filters(parse_qs(parsed.query, keep_blank_values=True))
+            if error:
+                self._json({"error": error}, 400)
+                return
+            rows = _load(raw, parsed_filters) or []
+            self._json(rows)
+            return
         if parsed.path != "/":
             self.send_error(404)
             return
@@ -337,12 +458,34 @@ class Handler(BaseHTTPRequestHandler):
             return
         form = parse_qs(self.rfile.read(length).decode("utf-8", "replace"))
         path = urlparse(self.path).path
-        if path == "/deals":
+        if path == "/api/collect":
+            self._collect()
+        elif path == "/deals":
             self._add(form)
         elif path == "/deals/status":
             self._move(form)
         else:
             self.send_error(404)
+
+    def _collect(self):
+        listings, notes = sources.collect()
+        added = updated = 0
+        with closing(deals.connect(DB_PATH)) as conn:
+            for listing in listings:
+                state = deals.upsert_listing(conn, listing)
+                if state == "added":
+                    added += 1
+                else:
+                    updated += 1
+        self._json({"added": added, "updated": updated, "notes": notes})
+
+    def _json(self, payload, status=200):
+        data = json.dumps(payload).encode()
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
 
     def _add(self, form):
         draft = {key: _one(form, key) for key in ("address", "location", "price", "estimated_value", "source", "notes", "link", "status")}

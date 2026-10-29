@@ -1,0 +1,29 @@
+# Own project, own network, own folder. Nothing here joins the Bitcoin node or the pool.
+name: hestia
+
+services:
+  hestia:
+    build: .
+    container_name: hestia
+    restart: unless-stopped
+    ports:
+      - "18080:8080"
+    environment:
+      HESTIA_DB: /data/hestia.db
+    volumes:
+      - ./data:/data
+    mem_limit: 128m
+    cpus: 0.25
+    pids_limit: 64
+    read_only: true
+    tmpfs:
+      - /tmp
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "2"
+
+networks:
+  default:
+    name: hestia

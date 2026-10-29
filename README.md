@@ -46,7 +46,7 @@ project-hestia/
 
 ## Local Server
 
-The app and the deal database stay on this machine, then on the Umbrel at `umbrel.local`. Nothing here is meant for a public host.
+Hestia runs as its own Docker container on the Umbrel at `umbrel.local`. The deal database is the `data/` folder next to this repo, on that server's disk. The container does not join the Bitcoin node or the pool, does not mount their data, and does not get the Docker socket. It is capped at a quarter CPU and 128 MB so it cannot crowd them out. Nothing here is meant for a public host.
 
 ## Getting Started
 
@@ -58,7 +58,13 @@ python3 app.py
 
 Open http://127.0.0.1:8080. Deals are stored in `data/hestia.db`.
 
-On the Umbrel, run `HOST=0.0.0.0 python3 app.py` in this folder and open http://umbrel.local:8080.
+On the Umbrel, clone this repo into its own folder, such as `~/hestia`, not into the node or pool directories. From that folder:
+
+```bash
+docker compose up -d --build
+```
+
+Open http://umbrel.local:18080. The database file is `data/hestia.db` in that folder. `docker compose down` stops only this container.
 
 Spread is estimated value minus asking price. Repairs, red flags, and the buyer list come after this list is in real use.
 

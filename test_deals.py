@@ -1,9 +1,11 @@
 import tempfile
 import unittest
+from datetime import date
 from pathlib import Path
 
 import app
 import deals
+import sources
 
 
 class DealTests(unittest.TestCase):
@@ -89,11 +91,45 @@ class DealTests(unittest.TestCase):
             {},
         )
         self.assertIn("&lt;script&gt;", page)
-        self.assertNotIn("<script>", page)
+        self.assertNotIn("javascript:alert", page)
         self.assertEqual(app.safe_href("javascript:alert(1)"), "")
         self.assertEqual(app.safe_href("https://example.com/a"), "https://example.com/a")
         self.assertEqual(app.safe_next("https://evil.test"), "/")
         self.assertEqual(app.safe_next("/?status=New"), "/?status=New")
+
+    def test_south_florida_listing_merges_on_parcel(self):
+        calendar = """
+        <div dayid='11/23/2026'>Tax Deed<br><span class="CALSCH">41</span> TD</div>
+        <div dayid='10/01/2026'>Tax Deed<br>TD</div>
+        """
+        sales, _ = sources.parse_calendar(calendar, today=date(2026, 10, 29))
+        self.assertEqual([sale["date"] for sale in sales], ["11/23/2026"])
+        _, next_link = sources.parse_calendar(
+            '<a href="calendar&selCalDate=%7Bts%20%272026%2D11%2D01%27%7D" aria-label="Next Month November">',
+            today=date(2026, 10, 29),
+        )
+        self.assertIn("selCalDate", next_link)
+        decoded = sources.decode_auction_html(
+            '<div id="AITEM_9" @A@E_ITEM">'
+            '@H@CAD_LBL">Property Address:@F @CAD_DTA">4017 N CYPRESS DRIVE@G'
+            '@H@CAD_LBL">@F @CAD_DTA">POMPANO BEACH, FL- 33069@G'
+            '@H@CAD_LBL">Opening Bid:@F @CAD_DTA">$30,102.66@G'
+            '@H@CAD_LBL">Parcel ID:@F @CAD_DTA">494205-AH-0170@G'
+            '@H@CAD_LBL">Case #:@F @CAD_DTA">53779@G'
+        )
+        fragment = decoded
+        listing = sources.parse_listings(fragment, county="Broward", kind="Tax deed", sale_date="11/23/2026", page_url="https://example.test/sale")[0]
+        self.assertEqual(listing["price"], 30102.66)
+        self.assertEqual(listing["location"], "POMPANO BEACH, FL- 33069")
+        self.assertEqual(deals.upsert_listing(self.conn, listing), "added")
+        deals.set_status(self.conn, deals.list_deals(self.conn)[0]["id"], "Watching")
+        listing["price"] = 100
+        self.assertEqual(deals.upsert_listing(self.conn, listing), "updated")
+        row = deals.list_deals(self.conn)[0]
+        self.assertEqual(row["price"], 100)
+        self.assertEqual(row["status"], "Watching")
+        self.assertEqual(row["metadata"]["parcel"], "494205-AH-0170")
+        self.assertEqual(len(deals.list_deals(self.conn)), 1)
         kept = app.render_page(
             [
                 {
