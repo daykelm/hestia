@@ -1,56 +1,27 @@
-# Project Hestia
+# Hestia
 
-A private tool built for *personal use* to make finding discounted / government / auction properties and quickly flipping them to cash buyers as smooth as possible.
+A private desk for one person working South Florida auction and tax-deed sales. It collects the next sale lists, checks each parcel against public records, and puts a short card on the ones worth opening.
 
-Named after *Hestia*, the Greek goddess of the hearth and home.
+The name is Hestia, the Greek goddess of the hearth and home. This is not a marketplace and not a product for other investors.
 
-## Goal
+The desk runs on a home Umbrel, at `umbrel.local:18080` and at [hestia.trading](https://hestia.trading) behind Cloudflare Access. The same machine runs a Bitcoin node and ckpool. Hestia does not join them.
 
-Find good deals → Secure them (under contract or buy) → Package and assign/sell to a cash buyer or wholesaler with minimal friction.
+How the pieces fit, which providers are in the score, and which plans were not bought: [docs/stack.md](docs/stack.md).
 
-This is *not* a public marketplace. It is a personal operating system for one investor (you).
+![Where Hestia runs](docs/graphics/architecture.png)
 
-## Core Workflow
+## What it does
 
-1.⁠ ⁠Ingest deals from government auctions, tax sales, seized properties, and other discounted sources
-2.⁠ ⁠Quickly qualify deals (price, estimated value, red flags, potential spread)
-3.⁠ ⁠Track deals through stages (Watching → Under Contract → Assigned → Closed)
-4.⁠ ⁠Package deals cleanly and send to your buyer list
-5.⁠ ⁠Generate basic contracts / assignment paperwork
+1. Pull upcoming tax-deed and foreclosure lists for Broward, Miami-Dade, and Lee.
+2. Score each parcel from the county roll, nearby sales, code cases, flood, and an ATTOM loan and tax report.
+3. Show a card: cause, worth, room, danger, what is still open, the loan, and the tax bill.
+4. Track the few deals that are pursued, from title check through a buyer.
 
-## Tech Stack (Initial Recommendation)
+Collier tax deeds are in person and are not collected. The court docket is still a manual check. Listing sites are links, not data feeds.
 
-•⁠  ⁠*Backend / Scripts*: Python
-•⁠  ⁠*Frontend* (optional later): Next.js or simple Streamlit / FastAPI + HTMX
-•⁠  ⁠*Database*: SQLite (start simple) → PostgreSQL later if needed
-•⁠  ⁠*Hosting*: My Umbrel server at `umbrel.local` (local first). Cloud (Railway / Vercel / VPS) only if this outgrows the home server.
+## Run it
 
-## Project Structure
-
-
-project-hestia/
-├── README.md
-├── PRODUCT.md
-├── FEATURES.md
-├── ARCHITECTURE.md
-├── ROADMAP.md
-├── DATA_SOURCES.md
-├── src/
-│   ├── data/
-│   ├── analysis/
-│   ├── tracking/
-│   └── buyers/
-├── data/                  # local deal storage
-└── templates/             # contract & deal package templates
-
-
-## Local Server
-
-Hestia runs as its own Docker container on the Umbrel at `umbrel.local`. The deal database is the `data/` folder next to this repo, on that server's disk. The container does not join the Bitcoin node or the pool, does not mount their data, and does not get the Docker socket. It is capped at a quarter CPU and 128 MB so it cannot crowd them out. Nothing here is meant for a public host.
-
-## Getting Started
-
-This is the Phase 1 deal list from `FEATURES.md`: add a deal, scan the spread, filter the list, and move the status.
+On this machine:
 
 ```bash
 python3 app.py
@@ -58,16 +29,25 @@ python3 app.py
 
 Open http://127.0.0.1:8080. Deals are stored in `data/hestia.db`.
 
-On the Umbrel, clone this repo into its own folder, such as `~/hestia`, not into the node or pool directories. From that folder:
+On the Umbrel, from `~/hestia`:
 
 ```bash
 docker compose up -d --build
 ```
 
-Open http://umbrel.local:18080. The database file is `data/hestia.db` in that folder. `docker compose down` stops only this container.
+`./deploy.sh` runs the tests, syncs this app, rebuilds only the hestia container, and publishes an Android update when the phone app changed. API keys stay in `~/hestia/.env` on that machine. They are not in this repo.
 
-Spread is estimated value minus asking price. Repairs, red flags, and the buyer list come after this list is in real use.
+## Layout
 
----
-
-Built for personal use first. Expand later only if it proves valuable.
+```
+app.py            the desk and the JSON API
+deals.py          SQLite
+sources.py        RealAuction calendars
+diligence.py      research and the score
+static/           the web desk
+mobile/           the Android app (Expo)
+docs/stack.md     stack, providers, and plans
+PRODUCT.md        who it is for
+FEATURES.md       what to build next
+DESIGN.md         the visual system
+```

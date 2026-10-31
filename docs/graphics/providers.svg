@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="500" viewBox="0 0 960 500" role="img" aria-labelledby="title desc">
+  <title id="title">Providers and what they are for</title>
+  <desc id="desc">Public records and an ATTOM trial feed the score. Listing sites are links. RealEstateAPI, RentCast, and listing scrapers are not in the score.</desc>
+  <rect width="960" height="500" fill="#f6f1e8"/>
+  <text x="40" y="44" fill="#111a30" font-family="Georgia, serif" font-size="26">Providers</text>
+  <text x="40" y="70" fill="#5c6b82" font-family="Avenir Next, Helvetica, sans-serif" font-size="14">What is in the score, what is only a link, and what was turned down.</text>
+
+  <g font-family="Avenir Next, Helvetica, sans-serif" font-size="14">
+    <rect x="40" y="96" width="280" height="384" rx="10" fill="#111a30"/>
+    <text x="60" y="128" fill="#ffb36b" font-size="13">IN THE SCORE</text>
+    <text x="60" y="164" fill="#f2e2c9">RealAuction calendars</text>
+    <text x="60" y="188" fill="#a9b4c7" font-size="12">Free. Public sale lists</text>
+    <text x="60" y="220" fill="#f2e2c9">County appraisers + GIS</text>
+    <text x="60" y="244" fill="#a9b4c7" font-size="12">Free. House, roll, and sales</text>
+    <text x="60" y="276" fill="#f2e2c9">Florida DOR, FEMA, Census</text>
+    <text x="60" y="300" fill="#a9b4c7" font-size="12">Free. Roll, flood, and a point</text>
+    <text x="60" y="332" fill="#f2e2c9">Esri World Imagery</text>
+    <text x="60" y="356" fill="#a9b4c7" font-size="12">Free. Satellite only</text>
+    <text x="60" y="388" fill="#f2e2c9">ATTOM Expanded Profile</text>
+    <text x="60" y="412" fill="#a9b4c7" font-size="12">Trial key. Loan and tax</text>
+    <text x="60" y="448" fill="#ffb36b" font-size="12">Paid plan not chosen</text>
+
+    <rect x="340" y="96" width="280" height="384" rx="10" fill="#fff" stroke="#d9cbb6"/>
+    <text x="360" y="128" fill="#c47b2b" font-size="13">LINKS ONLY</text>
+    <text x="360" y="164" fill="#111a30">County appraiser page</text>
+    <text x="360" y="188" fill="#5c6b82" font-size="12">Opened, not scraped for photos</text>
+    <text x="360" y="220" fill="#111a30">Google Maps</text>
+    <text x="360" y="244" fill="#5c6b82" font-size="12">Street search</text>
+    <text x="360" y="276" fill="#111a30">Zillow</text>
+    <text x="360" y="300" fill="#5c6b82" font-size="12">Reference. Requests blocked</text>
+    <text x="360" y="332" fill="#111a30">Realtor.com</text>
+    <text x="360" y="356" fill="#5c6b82" font-size="12">Reference. Rate limited</text>
+    <text x="360" y="412" fill="#5c6b82" font-size="12">No listing feed is fetched.</text>
+
+    <rect x="640" y="96" width="280" height="384" rx="10" fill="#fff" stroke="#ff4d2e"/>
+    <text x="660" y="128" fill="#ff4d2e" font-size="13">NOT IN THE SCORE</text>
+    <text x="660" y="164" fill="#111a30">RealEstateAPI</text>
+    <text x="660" y="188" fill="#5c6b82" font-size="12">Pay as you go, $0.10</text>
+    <text x="660" y="208" fill="#5c6b82" font-size="12">Wrong unit on two streets</text>
+    <text x="660" y="248" fill="#111a30">RentCast</text>
+    <text x="660" y="272" fill="#5c6b82" font-size="12">No open loan or tax year</text>
+    <text x="660" y="312" fill="#111a30">Estated</text>
+    <text x="660" y="336" fill="#5c6b82" font-size="12">Folded into ATTOM</text>
+    <text x="660" y="376" fill="#111a30">Listing scrapers</text>
+    <text x="660" y="400" fill="#5c6b82" font-size="12">OpenWeb Ninja, RealtyAPI</text>
+    <text x="660" y="448" fill="#ff4d2e" font-size="12">No monthly plan bought</text>
+  </g>
+</svg>

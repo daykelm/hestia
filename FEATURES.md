@@ -101,8 +101,9 @@ The items below are the first backlog. Several are already built under newer nam
 •⁠  ⁠User accounts / login system
 •⁠  ⁠Payment or escrow features
 •⁠  ⁠Fully autonomous agents
-•⁠  ⁠Mobile app
 •⁠  ⁠Complex CRM
+
+The Android app is built. It is not a second product. It reads the same desk.
 
 ---
 

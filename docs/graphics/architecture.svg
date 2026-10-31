@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+  <title id="title">Where Hestia runs</title>
+  <desc id="desc">The Android app and the web desk reach hestia.trading through Cloudflare Access and a tunnel. On the Umbrel, the hestia container and cloudflared sit beside the Bitcoin node and the pool, which they do not join.</desc>
+  <rect width="960" height="540" fill="#f6f1e8"/>
+  <text x="40" y="44" fill="#111a30" font-family="Georgia, serif" font-size="26">Where Hestia runs</text>
+  <text x="40" y="70" fill="#5c6b82" font-family="Avenir Next, Helvetica, sans-serif" font-size="14">One private desk. The node and the pool stay on their own.</text>
+
+  <g font-family="Avenir Next, Helvetica, sans-serif">
+    <rect x="40" y="100" width="250" height="72" rx="8" fill="#111a30"/>
+    <text x="60" y="130" fill="#f2e2c9" font-size="16">Android app</text>
+    <text x="60" y="152" fill="#a9b4c7" font-size="13">Expo SDK 58, arm64 APK</text>
+
+    <rect x="330" y="100" width="250" height="72" rx="8" fill="#111a30"/>
+    <text x="350" y="130" fill="#f2e2c9" font-size="16">Web desk</text>
+    <text x="350" y="152" fill="#a9b4c7" font-size="13">Browser, same JSON API</text>
+
+    <path d="M165 172 V196 H455 V172" fill="none" stroke="#3a4a63" stroke-width="1.5"/>
+    <path d="M310 196 V220" fill="none" stroke="#3a4a63" stroke-width="1.5"/>
+    <polygon points="310,228 304,216 316,216" fill="#3a4a63"/>
+
+    <rect x="150" y="228" width="320" height="78" rx="8" fill="#16233d"/>
+    <text x="170" y="258" fill="#ffb36b" font-size="16">hestia.trading</text>
+    <text x="170" y="282" fill="#f2e2c9" font-size="13">Cloudflare Access, then an outbound tunnel</text>
+
+    <path d="M310 306 V332" fill="none" stroke="#3a4a63" stroke-width="1.5"/>
+    <polygon points="310,340 304,328 316,328" fill="#3a4a63"/>
+
+    <rect x="40" y="348" width="560" height="172" rx="10" fill="#fff" stroke="#d9cbb6"/>
+    <text x="60" y="376" fill="#5c6b82" font-size="12" letter-spacing="0.08em">UMBREL</text>
+    <rect x="60" y="392" width="250" height="104" rx="8" fill="#111a30"/>
+    <text x="78" y="422" fill="#f2e2c9" font-size="16">hestia</text>
+    <text x="78" y="444" fill="#a9b4c7" font-size="13">Python 3.12, port 18080</text>
+    <text x="78" y="466" fill="#a9b4c7" font-size="13">SQLite at /data/hestia.db</text>
+    <text x="78" y="484" fill="#a9b4c7" font-size="12">128 MB, read-only root</text>
+
+    <rect x="330" y="392" width="246" height="104" rx="8" fill="#24374f"/>
+    <text x="348" y="422" fill="#f2e2c9" font-size="16">cloudflared</text>
+    <text x="348" y="444" fill="#a9b4c7" font-size="13">Tunnel profile only</text>
+    <text x="348" y="466" fill="#a9b4c7" font-size="13">HTTP/2, outbound</text>
+    <text x="348" y="484" fill="#a9b4c7" font-size="12">No router port forward</text>
+
+    <rect x="640" y="348" width="280" height="172" rx="10" fill="none" stroke="#3a4a63" stroke-dasharray="5 4"/>
+    <text x="660" y="376" fill="#5c6b82" font-size="12" letter-spacing="0.08em">SAME MACHINE, NOT JOINED</text>
+    <rect x="660" y="396" width="240" height="48" rx="8" fill="#f6f1e8" stroke="#d9cbb6"/>
+    <text x="678" y="426" fill="#111a30" font-size="15">Bitcoin node</text>
+    <rect x="660" y="456" width="240" height="48" rx="8" fill="#f6f1e8" stroke="#d9cbb6"/>
+    <text x="678" y="486" fill="#111a30" font-size="15">ckpool</text>
+  </g>
+</svg>

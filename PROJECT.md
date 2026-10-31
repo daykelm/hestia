@@ -24,7 +24,7 @@ Me (the builder). This tool exists to serve my own deal flow first.
 3.⁠ ⁠*Data quality matters most* — Garbage in = wasted time
 4.⁠ ⁠*Minimal viable everything* — Only add features that remove real friction
 5.⁠ ⁠*Stay legal and clean* — Clear tracking, good records, proper contracts
-6.⁠ ⁠*Lives on my Umbrel* — A separate Docker container on `umbrel.local`. Deal data sits on that disk. The Bitcoin node and the pool are left alone
+6.⁠ ⁠*Lives on my Umbrel* — A separate Docker container on `umbrel.local`, also reachable at `hestia.trading` behind Cloudflare Access. Deal data sits on that disk. The Bitcoin node and the pool are left alone
 
 ## Out of Scope (for now)
 
@@ -32,8 +32,9 @@ Me (the builder). This tool exists to serve my own deal flow first.
 •⁠  ⁠Multi-user accounts
 •⁠  ⁠Complex AI agents
 •⁠  ⁠Automatic bidding or fully autonomous purchasing
-•⁠  ⁠Mobile app
 •⁠  ⁠Payment processing / escrow handling
+
+The Android app is built. It uses the same API as the web desk. Stack, providers, and the plans that were not bought are in `docs/stack.md`.
 
 ## Future Possibility
 

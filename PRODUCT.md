@@ -23,21 +23,22 @@ Wholesaler CRMs start from leads someone already found. Auction desks stop at a 
 - Counties: Broward, Miami-Dade, and Lee from the RealAuction calendars. Collier tax deeds are in person and not collected.
 - Weekly loop: collect upcoming sales, score them, skim the best, then check title and condition by hand for the few worth pursuing.
 - Sale days come in batches of 20 to 40 properties. Untouched deals drop off after their sale day.
-- Runs on his Umbrel home server at `umbrel.local:18080`, on the home network only. The same machine runs a Bitcoin node and a mining pool, which must not be disturbed.
+- Runs on his Umbrel home server at `umbrel.local:18080`, and at `hestia.trading` behind Cloudflare Access. The same machine runs a Bitcoin node and a mining pool, which must not be disturbed.
 
 ## Capabilities and Constraints
 
 - Collect upcoming tax deed and foreclosure sales. Price is the opening bid, or the final judgment for foreclosures.
-- Score from 1 to 10 on five factors: resale value, comparables, legal, occupancy, and other liens. Legal and liens are not checked yet, so 6 is the current ceiling.
-- Statuses: New, Watching, Under Contract, Assigned, Closed, Dead. Deals can also be added by hand, with filters and an estimated value he types himself.
+- Score from 1 to 10 on seven factors: resale value, comparables, title, code and building, flood, occupancy, and other liens. A factor counts only after a source answers it. Excellent requires his own lien search, not just the ATTOM report.
+- The card is cause, worth, room, danger, and what is still open, plus the loan and the tax bill when ATTOM returned them. Cause separates taxes, an HOA lien, a mortgage, or more than one.
+- Steps: Found, Researched, Title checked, Bid set, Won, Buyer assigned, Closed. Passed is a deal he dropped. Deals can also be added by hand.
 - The tax roll value is shown beside a deal, never as its estimated value.
-- Keep it light: Python standard library, one SQLite file, and no external font or script hosts. The container is capped at a quarter CPU and 128 MB.
-- No login. Anyone on the home network can edit.
-- Not built yet: estimated repairs, red-flag notes, a Pursue / Pass / Watch decision, and the private buyer list.
+- Keep it light: Python standard library, one SQLite file, and no external font or script hosts. The container is capped at a quarter CPU and 128 MB. The phone app is Expo on Android and reads the same API.
+- The public hostname asks for Cloudflare Access. The home port has no app login.
+- Not built yet: estimated repairs, a private buyer list, and sending the bid to the county site.
 
 ## Evidence on Hand
 
-Real public auction data: about 98 upcoming properties with case numbers, parcels, prices, tax roll values, and scores. No property photos come from these sources. No buyers, closed deals, or results exist yet, so none can be shown.
+Real public auction data: upcoming Broward, Miami-Dade, and Lee sales with case numbers, parcels, prices, tax roll values, and scores. The image on a card is an Esri satellite, not a listing photo. No buyers, closed deals, or results exist yet, so none can be shown.
 
 ## Product Principles
 

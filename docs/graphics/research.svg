@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="560" viewBox="0 0 960 560" role="img" aria-labelledby="title desc">
+  <title id="title">How a deal gets a card</title>
+  <desc id="desc">An auction listing is checked against public records and ATTOM, scored on the factors that answered, and shown as a short card.</desc>
+  <rect width="960" height="560" fill="#f6f1e8"/>
+  <text x="40" y="44" fill="#111a30" font-family="Georgia, serif" font-size="26">How a deal gets a card</text>
+  <text x="40" y="70" fill="#5c6b82" font-family="Avenir Next, Helvetica, sans-serif" font-size="14">Only a source that answered is counted. A flag turns the band red.</text>
+
+  <g font-family="Avenir Next, Helvetica, sans-serif">
+    <rect x="40" y="96" width="200" height="150" rx="8" fill="#111a30"/>
+    <text x="56" y="126" fill="#ffb36b" font-size="13">1. Collect</text>
+    <text x="56" y="154" fill="#f2e2c9" font-size="16">RealAuction</text>
+    <text x="56" y="178" fill="#a9b4c7" font-size="13">Broward</text>
+    <text x="56" y="198" fill="#a9b4c7" font-size="13">Miami-Dade</text>
+    <text x="56" y="218" fill="#a9b4c7" font-size="13">Lee</text>
+
+    <path d="M240 171 H268" stroke="#3a4a63" stroke-width="1.5"/>
+    <polygon points="276,171 264,165 264,177" fill="#3a4a63"/>
+
+    <rect x="284" y="96" width="360" height="400" rx="8" fill="#fff" stroke="#d9cbb6"/>
+    <text x="304" y="126" fill="#ffb36b" font-size="13">2. Research</text>
+    <g fill="#111a30" font-size="14">
+      <rect x="304" y="144" width="320" height="40" rx="6" fill="#16233d"/>
+      <text x="320" y="169" fill="#f2e2c9">Florida DOR cadastral roll</text>
+      <rect x="304" y="194" width="320" height="40" rx="6" fill="#16233d"/>
+      <text x="320" y="219" fill="#f2e2c9">County appraiser: house, roll, sales</text>
+      <rect x="304" y="244" width="320" height="40" rx="6" fill="#16233d"/>
+      <text x="320" y="269" fill="#f2e2c9">Code cases, Miami-Dade and Lee</text>
+      <rect x="304" y="294" width="320" height="40" rx="6" fill="#16233d"/>
+      <text x="320" y="319" fill="#f2e2c9">Census geocoder and FEMA flood</text>
+      <rect x="304" y="344" width="320" height="40" rx="6" fill="#16233d"/>
+      <text x="320" y="369" fill="#f2e2c9">ATTOM loan and tax bill</text>
+      <rect x="304" y="394" width="320" height="40" rx="6" fill="#24374f"/>
+      <text x="320" y="419" fill="#f2e2c9">Esri satellite, the only image</text>
+      <text x="304" y="470" fill="#5c6b82" font-size="13">Broward has no code layer yet.</text>
+      <text x="304" y="488" fill="#5c6b82" font-size="13">The court docket is still manual.</text>
+    </g>
+
+    <path d="M644 296 H676" stroke="#3a4a63" stroke-width="1.5"/>
+    <polygon points="684,296 672,290 672,302" fill="#3a4a63"/>
+
+    <rect x="692" y="96" width="228" height="150" rx="8" fill="#111a30"/>
+    <text x="708" y="126" fill="#ffb36b" font-size="13">3. Score</text>
+    <text x="708" y="156" fill="#f2e2c9" font-size="15">1 to 10</text>
+    <text x="708" y="178" fill="#a9b4c7" font-size="13">Checked factors only</text>
+    <text x="708" y="198" fill="#a9b4c7" font-size="13">Any flag forces Risky</text>
+    <text x="708" y="218" fill="#a9b4c7" font-size="13">Thin if too few checks</text>
+
+    <path d="M806 246 V268" stroke="#3a4a63" stroke-width="1.5"/>
+    <polygon points="806,276 800,264 812,264" fill="#3a4a63"/>
+
+    <rect x="692" y="284" width="228" height="252" rx="8" fill="#16233d"/>
+    <text x="708" y="314" fill="#ffb36b" font-size="13">4. Card</text>
+    <g fill="#f2e2c9" font-size="14">
+      <text x="708" y="344">Cause</text>
+      <text x="708" y="368">Worth</text>
+      <text x="708" y="392">Room</text>
+      <text x="708" y="416">Danger</text>
+      <text x="708" y="440">Still open</text>
+      <text x="708" y="464">Loan</text>
+      <text x="708" y="488">Tax</text>
+    </g>
+    <text x="708" y="516" fill="#a9b4c7" font-size="12">Seven checks stay behind it</text>
+  </g>
+</svg>
