@@ -1,7 +1,9 @@
+import os
 import tempfile
 import unittest
 from datetime import date, timedelta
 from pathlib import Path
+from unittest import mock
 
 import app
 import deals
@@ -141,7 +143,8 @@ class DealTests(unittest.TestCase):
             {},
         )
         self.assertIn("Today", grouped)
-        self.assertIn('class="thumb"', grouped)
+        self.assertIn('class="card-photo"', grouped)
+        self.assertIn("map_action=pano&amp;viewpoint=25.800000,-80.200000", grouped)
         self.assertIn('popovertarget="help-roll"', grouped)
         self.assertIn("Next sale", grouped)
         self.assertIn("$21K", grouped)
@@ -414,6 +417,15 @@ class DealTests(unittest.TestCase):
         self.assertEqual(unscored["verdict"], "Not scored yet")
         no_report = diligence.costs(1000, {"kind": "Foreclosure", "roll_value": 9000, "diligence": {"score": 6, "band": "good"}})
         self.assertEqual(no_report["verdict"], "Can't say yet")
+
+    def test_street_photo_needs_a_key_and_falls_back_to_the_satellite(self):
+        with mock.patch.dict(os.environ, {"GOOGLE_MAPS_KEY": ""}):
+            self.assertEqual(diligence.street_photo_url((-80.2, 25.8)), "")
+        with mock.patch.dict(os.environ, {"GOOGLE_MAPS_KEY": "k"}):
+            self.assertIn("location=25.800000%2C-80.200000", diligence.street_photo_url((-80.2, 25.8)))
+            shown = app._photo({"metadata": {"diligence": {"point": [-80.2, 25.8]}}}, 480, 300)
+            self.assertIn("maps.googleapis.com", shown)
+            self.assertIn('data-fallback="https://services.arcgisonline.com', shown)
 
     def test_desk_opens_on_the_next_sale_grouped_by_verdict(self):
         def deal(did, day, roll):

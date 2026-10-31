@@ -186,7 +186,7 @@ function select(id, { open = true } = {}) {
   selected = id;
   for (const node of plates.querySelectorAll(".plate.on")) node.classList.remove("on");
   plate.classList.add("on");
-  for (const row of document.querySelectorAll(".index tr[data-id]")) {
+  for (const row of document.querySelectorAll(".deal-card")) {
     row.toggleAttribute("aria-current", false);
     if (row.dataset.id === id) row.setAttribute("aria-current", "true");
   }
@@ -203,10 +203,11 @@ function select(id, { open = true } = {}) {
 }
 
 document.addEventListener("click", (event) => {
-  const target = event.target.closest(".index tr[data-id], .pipeline a[data-id], #sky .hit");
+  if (event.target.closest(".sv")) return;
+  const target = event.target.closest(".deal-card, .pipeline a[data-id], #sky .hit");
   if (target) {
     event.preventDefault();
-    opener = target.matches("tr") ? target.querySelector("a") : target.matches("a") ? target : null;
+    opener = target.matches(".deal-card") ? target.querySelector(".card-name") : target.matches("a") ? target : null;
     select(target.dataset.id);
     return;
   }
@@ -227,7 +228,7 @@ document.addEventListener("keydown", (event) => {
 new ResizeObserver(draw).observe(sky);
 
 const fromHash = (location.hash.match(/^#(?:deal-|d)(\d+)$/) || [])[1] || "";
-const first = document.querySelector(".index tr[data-id]") || plates.querySelector(".plate");
+const first = document.querySelector(".deal-card") || plates.querySelector(".plate");
 const start = document.getElementById(`d${fromHash}`) ? fromHash : first && first.dataset.id;
 if (start) select(start, { open: Boolean(fromHash) });
 

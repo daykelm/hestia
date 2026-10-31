@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { Image, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { Aerial } from "../../components/Aerial";
 import { Help } from "../../components/Help";
 import { ScoreDot } from "../../components/ScoreDot";
@@ -28,6 +28,7 @@ export default function DealScreen() {
   const [error, setError] = useState("");
   const [form, setForm] = useState<Record<string, string | boolean>>({});
   const [checksOpen, setChecksOpen] = useState(false);
+  const [photoFailed, setPhotoFailed] = useState(false);
 
   if (!deal) {
     return (
@@ -73,7 +74,15 @@ export default function DealScreen() {
         <Back />
         <Text style={styles.name}>{displayName(deal.address)}</Text>
         <Text style={styles.where}>{[displayPlace(deal.location), deal.source].filter(Boolean).join(" · ")}</Text>
+        {deal.photo && !photoFailed ? (
+          <Image source={{ uri: deal.photo }} style={styles.streetPhoto} resizeMode="cover" onError={() => setPhotoFailed(true)} accessibilityLabel={`Street view of ${displayName(deal.address)}`} />
+        ) : null}
         {d?.point ? <Aerial point={d.point} name={displayName(deal.address)} /> : null}
+        {deal.street_view ? (
+          <Pressable style={styles.streetViewButton} onPress={() => Linking.openURL(deal.street_view!)} accessibilityRole="link">
+            <Text style={styles.link}>Open Street View</Text>
+          </Pressable>
+        ) : null}
         {d?.house ? <Text style={styles.house}>{d.house}</Text> : null}
         {costs ? (
           <View style={styles.costs}>
@@ -389,6 +398,8 @@ const styles = StyleSheet.create({
   brief: { flexDirection: "row", flexWrap: "wrap", rowGap: 14, marginTop: 16 },
   briefItem: { width: "50%", paddingRight: 12 },
   briefText: { color: color.dust, fontSize: 15, lineHeight: 20, marginTop: 2 },
+  streetPhoto: { width: "100%", aspectRatio: 16 / 10, marginTop: 14, borderRadius: 3, backgroundColor: color.indigo },
+  streetViewButton: { minHeight: 44, marginTop: 8, borderWidth: 1, borderColor: color.chart, borderRadius: 6, alignItems: "center", justifyContent: "center" },
   costs: { marginTop: 16, gap: 6 },
   costVerdict: { fontFamily: serif, fontSize: 24, lineHeight: 28 },
   costCeiling: { color: color.dust, fontSize: 15, marginTop: 2 },

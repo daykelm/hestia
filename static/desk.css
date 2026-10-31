@@ -237,27 +237,7 @@ form.add .wide { grid-column: 1 / -1; }
 #sky .reticle-in { transform-box: fill-box; transform-origin: center; animation: lock 220ms var(--out); }
 @keyframes lock { from { opacity: 0; transform: scale(1.6); } }
 
-/* Index */
-table.index { width: 100%; border-collapse: collapse; }
-.index th {
-  padding: 0.4rem 0.6rem;
-  border-bottom: 1px solid var(--chart);
-  color: var(--quiet);
-  font-size: 0.75rem;
-  font-weight: 400;
-  text-align: left;
-  white-space: nowrap;
-}
-.index td { padding: 0.6rem; border-bottom: 1px solid var(--indigo); vertical-align: middle; }
-.index tr.day th {
-  position: sticky; top: 0; z-index: 1;
-  padding: 0.9rem 0.6rem 0.35rem; text-align: left;
-  font-size: 0.8125rem; font-weight: 600; color: var(--amber);
-  background: var(--sky); border-bottom: 1px solid var(--chart);
-}
-.index tr.day .c { margin-left: 0.35rem; color: var(--quiet); font-weight: 400; }
-.index td.prop { display: flex; align-items: center; gap: 0.65rem; }
-.index .id { min-width: 0; }
+/* Deal list */
 .group, .later { margin-top: 0.85rem; }
 .group summary, .later > summary {
   display: flex; align-items: baseline; gap: 0.5rem; min-height: 44px; padding-block: 0.6rem;
@@ -268,22 +248,30 @@ table.index { width: 100%; border-collapse: collapse; }
 .group summary::after, .later > summary::after { content: "Show"; margin-left: auto; color: var(--quiet); font-family: var(--sans); font-size: 0.8125rem; }
 .group[open] > summary::after, .later[open] > summary::after { content: "Hide"; }
 .later > summary { border-top: 1px solid var(--chart); margin-top: 1rem; }
-.index td.cost { white-space: nowrap; font-size: 1rem; }
 .tools .process { padding: 0.75rem 0 0; }
 .tools .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
 .tools .chart { margin-top: 0.75rem; }
-.index .thumb { width: 64px; height: 44px; flex: none; object-fit: cover; border-radius: 3px; background: var(--indigo); display: block; }
-.index tbody tr { cursor: pointer; transition: background-color 140ms var(--out); }
-.index tbody tr[aria-current="true"] { background: var(--plate); }
-.index tbody tr[aria-current="true"] .prop a { color: var(--red); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.85rem; margin: 0.35rem 0 0; padding: 0; list-style: none; }
+.deal-card { display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--chart); border-radius: 6px; overflow: hidden; background: var(--indigo); cursor: pointer; transition: border-color 140ms var(--out), background-color 140ms var(--out); }
+.deal-card[aria-current="true"] { border-color: var(--dust); background: var(--plate); }
 @media (hover: hover) and (pointer: fine) {
-  .index tbody tr:hover { background: var(--indigo); }
+  .deal-card:hover { border-color: var(--quiet); }
 }
-.index .prop a { font-weight: 500; font-size: 1rem; text-decoration: none; }
-.index .where { display: block; color: var(--quiet); font-size: 0.8125rem; }
-.index td.score { width: 4.5rem; white-space: nowrap; }
-.index td.score span:last-child { display: inline-block; min-width: 1.1rem; }
-.index small { display: block; color: var(--amber); font-size: 0.75rem; }
+.card-top { position: relative; }
+.card-photo { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; background: var(--plate); }
+.sv {
+  position: absolute; right: 0.5rem; bottom: 0.5rem; display: inline-flex; align-items: center; min-height: 36px; padding: 0 0.7rem;
+  border-radius: 6px; color: var(--dust); font-size: 0.8125rem; text-decoration: none; background: rgb(10 16 33 / 0.85);
+}
+.card-body { display: flex; flex: 1; flex-direction: column; gap: 0.15rem; padding: 0.7rem 0.8rem 0.8rem; }
+.card-name { margin-top: 0.3rem; color: var(--dust); font-size: 0.9375rem; line-height: 1.25; text-decoration: none; }
+.deal-card[aria-current="true"] .card-name { color: var(--red); }
+.card-body .where { color: var(--quiet); font-size: 0.8125rem; }
+.card-body .danger { color: var(--amber); font-size: 0.8125rem; }
+.card-body .cost { color: var(--dust); font-size: 1.375rem; font-weight: 600; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.card-body .facts { color: var(--dust); font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+.card-body .cost small { margin-left: 0.4rem; color: var(--quiet); font-size: 0.75rem; font-weight: 400; }
+.sv-button { display: flex; align-items: center; justify-content: center; min-height: 44px; margin-top: 0.5rem; border: 1px solid var(--chart); border-radius: 6px; color: var(--dust); text-decoration: none; }
 
 .mag {
   display: inline-block;

@@ -54,6 +54,8 @@ export type Deal = {
   card?: { label: string; text: string }[];
   costs?: Partial<Costs>;
   street?: { name: string; url: string }[];
+  street_view?: string;
+  photo?: string;
   metadata: {
     county?: string;
     kind?: string;

@@ -544,14 +544,24 @@ def _plate(deal, next_query):
 
 
 def _aerial(deal):
-    point = ((_meta(deal).get("diligence") or {}).get("point")) or None
+    point = _point(deal)
     if not point:
         return ""
     name = html.escape(display_name(deal["address"]), quote=True)
+    street = html.escape(diligence.street_photo_url(point), quote=True)
+    # A missing street photo removes itself, and the satellite stays.
+    photo = (
+        f'<figure class="aerial"><img src="{street}" alt="Street view of {name}" loading="lazy" width="640" height="400"'
+        ' onerror="this.closest(\'figure\').remove()"><figcaption>Street View · Google</figcaption></figure>'
+        if street
+        else ""
+    )
     return (
+        photo +
         f'<figure class="aerial"><img src="{html.escape(diligence.aerial_url(point), quote=True)}"'
         f' alt="Satellite view of {name}" loading="lazy" width="640" height="400">'
         '<span class="pin" aria-hidden="true"></span><figcaption>Satellite · Esri World Imagery</figcaption></figure>'
+        f'{_street_view(deal, "sv-button")}'
     )
 
 
@@ -573,16 +583,6 @@ def _day_heading(day, today):
     if day == today + timedelta(days=1):
         return f"Tomorrow · {day.strftime('%b %-d')}"
     return day.strftime("%A · %b %-d")
-
-
-def _thumb(deal):
-    point = (_meta(deal).get("diligence") or {}).get("point")
-    if not point or len(point) != 2:
-        return '<span class="thumb empty" aria-hidden="true"></span>'
-    url = diligence.aerial_url(point, 192, 128)
-    return (
-        f'<img class="thumb" src="{html.escape(url, quote=True)}" alt="" loading="lazy" width="64" height="44">'
-    )
 
 
 # The order a sale morning reads in. The first three start open, because those are the deals to act on.
@@ -615,24 +615,50 @@ def _cost_range(deal):
     return best if best == worst else f"{best}–{worst}"
 
 
-def _index_row(deal, dated):
+def _point(deal):
+    point = (_meta(deal).get("diligence") or {}).get("point")
+    return point if point and len(point) == 2 else None
+
+
+def _photo(deal, width, height, alt=""):
+    """The street photo when Google has one, or the satellite."""
+    point = _point(deal)
+    if not point:
+        return '<span class="card-photo empty" aria-hidden="true"></span>'
+    aerial = html.escape(diligence.aerial_url(point, width, height), quote=True)
+    street = html.escape(diligence.street_photo_url(point, width, height), quote=True)
+    fallback = f' data-fallback="{aerial}" onerror="this.onerror=null;this.src=this.dataset.fallback"' if street else ""
+    return f'<img class="card-photo" src="{street or aerial}"{fallback} alt="{html.escape(alt, quote=True)}" loading="lazy" width="{width}" height="{height}">'
+
+
+def _street_view(deal, css):
+    point = _point(deal)
+    if not point:
+        return ""
+    return f'<a class="{css}" href="{html.escape(diligence.street_view_link(point), quote=True)}" rel="noreferrer" target="_blank">Street View</a>'
+
+
+def _deal_card(deal, dated):
     did = int(deal["id"])
+    name = display_name(deal["address"])
+    danger = next(line["text"] for line in card_lines(deal) if line["label"] == "Danger")
+    danger_html = "" if danger == "None on record" else f'<span class="danger">{html.escape(danger)}</span>'
+    house = (_meta(deal).get("diligence") or {}).get("house") or ""
+    house_html = f'<span class="facts">{html.escape(house)}</span>' if house else ""
     return (
-        f'<tr data-id="{did}">'
-        f'<td class="prop">{_thumb(deal)}<span class="id">'
-        f'<a href="#d{did}">{html.escape(display_name(deal["address"]))}</a>'
-        f'<span class="where">{html.escape(_row_hint(deal, dated))}</span>'
-        f"</span></td>"
-        f'<td class="num cost">{html.escape(_cost_range(deal))}</td>'
-        "</tr>"
+        f'<li class="deal-card" data-id="{did}">'
+        f'<div class="card-top">{_photo(deal, 480, 300)}{_street_view(deal, "sv")}</div>'
+        f'<div class="card-body"><span class="cost">{html.escape(_cost_range(deal))}<small>all in</small></span>{house_html}'
+        f'<a class="card-name" href="#d{did}">{html.escape(name)}</a>'
+        f'<span class="where">{html.escape(_row_hint(deal, dated))}</span>{danger_html}</div>'
+        "</li>"
     )
 
 
 def _row_hint(deal, dated):
     place = display_place(deal.get("location"))
     day = _meta(deal).get("sale_date") if dated else ""
-    danger = next(line["text"] for line in card_lines(deal) if line["label"] == "Danger")
-    return " · ".join(part for part in (place, day, "" if danger == "None on record" else danger) if part)
+    return " · ".join(part for part in (place, day) if part)
 
 
 def _verdict_groups(rows, dated=False):
@@ -647,12 +673,11 @@ def _verdict_groups(rows, dated=False):
         members = sorted((deal for deal in rows if _verdict(deal) == verdict), key=room)
         if not members:
             continue
-        body = "".join(_index_row(deal, dated) for deal in members)
+        body = "".join(_deal_card(deal, dated) for deal in members)
         parts.append(
             f'<details class="group"{" open" if start_open else ""}>'
             f'<summary>{html.escape(verdict)} <span class="c">{len(members)}</span></summary>'
-            '<table class="index"><thead class="sr"><tr><th>Property</th><th>All in, best to worst</th></tr></thead>'
-            f"<tbody>{body}</tbody></table></details>"
+            f'<ul class="cards">{body}</ul></details>'
         )
     return "".join(parts)
 
@@ -1124,13 +1149,20 @@ def _rescore(deal):
         deals.save_diligence(conn, deal["id"], graded, result.get("just_value"))
 
 
+def _images(deal):
+    point = _point(deal)
+    if not point:
+        return {}
+    return {"street_view": diligence.street_view_link(point), "photo": diligence.street_photo_url(point)}
+
+
 def _prepare(deal):
     """Add the auction bid link for the app. It is derived, so it is not stored."""
     meta = dict(deal.get("metadata") or {})
     url = sources.bid_url(meta)
     if url:
         meta["bid_url"] = url
-    return {**deal, "metadata": meta, "card": card_lines(deal), "costs": deal_costs(deal), "street": street_links(deal)}
+    return {**deal, "metadata": meta, "card": card_lines(deal), "costs": deal_costs(deal), **_images(deal), "street": street_links(deal)}
 
 
 def _with_hash(nxt, deal_id):

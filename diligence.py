@@ -618,6 +618,23 @@ def score_facts(facts, today=None):
     return {"just_value": round(agreed) if agreed else None, "diligence": diligence}
 
 
+def street_view_link(point):
+    """Google's own Street View page for a (lon, lat) point. It needs no key."""
+    lon, lat = point
+    return f"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint={lat:.6f},{lon:.6f}"
+
+
+def street_photo_url(point, width=640, height=400):
+    """A Street View photo, loaded by the viewer's browser and never stored. Empty without GOOGLE_MAPS_KEY."""
+    key = os.environ.get("GOOGLE_MAPS_KEY", "").strip()
+    if not key:
+        return ""
+    lon, lat = point
+    # shortcut: the key sits in the image URL, so restrict it to this one API, cap its quota, and proxy it before a second user arrives
+    query = urllib.parse.urlencode({"size": f"{width}x{height}", "location": f"{lat:.6f},{lon:.6f}", "fov": 80, "return_error_code": "true", "key": key})
+    return f"https://maps.googleapis.com/maps/api/streetview?{query}"
+
+
 def aerial_url(point, width=640, height=400):
     """Esri World Imagery around a (lon, lat) point, about 110 m across."""
     lon, lat = point

@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, SectionList, StyleSheet, Text, View } from "react-native";
+import { Image, Linking, Pressable, RefreshControl, ScrollView, SectionList, StyleSheet, Text, View } from "react-native";
+import { aerialUrl } from "../components/Aerial";
 import { Help } from "../components/Help";
 import { displayName, displayPlace, postForm, type Deal } from "../lib/api";
 import { useStore } from "../lib/store";
@@ -175,25 +176,37 @@ function Chip({ label, on, count, onPress }: { label: string; on: boolean; count
 }
 
 function Row({ deal, dated }: { deal: Deal; dated: boolean }) {
+  const [photoFailed, setPhotoFailed] = useState(false);
   const danger = deal.card?.find((line) => line.label === "Danger")?.text;
   const costs = deal.costs;
   const range = !costs?.rows ? "—" : compact(costs.best!) === compact(costs.worst!) ? compact(costs.best!) : `${compact(costs.best!)}–${compact(costs.worst!)}`;
   const where = [displayPlace(deal.location), dated ? deal.metadata.sale_date : ""].filter(Boolean).join(" · ");
+  const point = deal.metadata.diligence?.point;
+  const uri = deal.photo && !photoFailed ? deal.photo : point ? aerialUrl(point, 640, 400) : "";
   return (
     <Pressable
-      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       onPress={() => router.push(`/deal/${deal.id}`)}
       accessibilityRole="button"
       accessibilityLabel={`${displayName(deal.address)}, ${verdictOf(deal)}, all in ${range}`}
     >
-      <View style={styles.prop}>
+      <View>
+        {uri ? <Image source={{ uri }} style={styles.photo} resizeMode="cover" fadeDuration={200} onError={() => setPhotoFailed(true)} /> : <View style={styles.photo} />}
+        {deal.street_view ? (
+          <Pressable style={styles.streetView} onPress={() => Linking.openURL(deal.street_view!)} accessibilityRole="link" accessibilityLabel={`Street View of ${displayName(deal.address)}`}>
+            <Text style={styles.streetViewText}>Street View</Text>
+          </Pressable>
+        ) : null}
+      </View>
+      <View style={styles.cardBody}>
+        <Text style={styles.bid}>{range} <Text style={styles.allIn}>all in</Text></Text>
+        {deal.metadata.diligence?.house ? <Text style={styles.facts} numberOfLines={1}>{deal.metadata.diligence.house}</Text> : null}
         <Text style={styles.name} numberOfLines={1}>
           {displayName(deal.address)}
         </Text>
         <Text style={styles.where} numberOfLines={1}>{where}</Text>
         {danger && danger !== "None on record" ? <Text style={styles.danger} numberOfLines={2}>{danger}</Text> : null}
       </View>
-      <Text style={styles.bid}>{range}</Text>
     </Pressable>
   );
 }
@@ -226,10 +239,15 @@ const styles = StyleSheet.create({
   danger: { color: color.amber, fontSize: 13, marginTop: 2 },
   error: { color: color.red, paddingHorizontal: 16, paddingVertical: 8 },
   empty: { color: color.quiet, padding: 16 },
-  row: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: color.indigo },
-  rowPressed: { backgroundColor: color.indigo },
-  prop: { flex: 1, minWidth: 0 },
-  name: { color: color.dust, fontSize: 16, fontWeight: "500" },
+  card: { marginHorizontal: 16, marginBottom: 12, borderWidth: 1, borderColor: color.chart, borderRadius: 6, overflow: "hidden", backgroundColor: color.indigo },
+  cardPressed: { borderColor: color.quiet },
+  photo: { width: "100%", aspectRatio: 16 / 10, backgroundColor: color.plate },
+  streetView: { position: "absolute", right: 8, bottom: 8, minHeight: 44, paddingHorizontal: 12, borderRadius: 6, justifyContent: "center", backgroundColor: "rgba(10,16,33,0.85)" },
+  streetViewText: { color: color.dust, fontSize: 14 },
+  cardBody: { padding: 12 },
+  facts: { color: color.dust, fontSize: 14, marginTop: 2, fontVariant: ["tabular-nums"] },
+  name: { color: color.dust, fontSize: 15, marginTop: 6 },
   where: { color: color.quiet, fontSize: 13, marginTop: 2 },
-  bid: { color: color.dust, fontSize: 15, fontVariant: ["tabular-nums"] },
+  bid: { color: color.dust, fontSize: 22, fontWeight: "600", fontVariant: ["tabular-nums"] },
+  allIn: { color: color.quiet, fontSize: 12 },
 });

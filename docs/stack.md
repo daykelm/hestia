@@ -108,7 +108,8 @@ About 160 lookups, about $16 of the $200 credit. The balance left at the vendor 
 | Miami-Dade and Lee code GIS | Free | Open code cases, code liens, building violations, Lee nuisance cases. Broward has no code layer here, so that factor stays unchecked. |
 | US Census geocoder | Free | A second address and a point when the roll has none. |
 | FEMA flood map | Free | Zone. Coastal V zones raise a flag. |
-| Esri World Imagery | Free | The satellite on the card. There is no street-photo feed. |
+| Esri World Imagery | Free | The satellite on the card, and the card photo when no street photo exists. |
+| Google Street View | The link needs no key. The photo uses Street View Static with `GOOGLE_MAPS_KEY` in `~/hestia/.env`, and no plan is chosen | The photo on the list and the card, loaded by the viewer's device and not stored. The date of the image is not shown, so it does not prove a building still stands. |
 | ATTOM Property API | Trial key, no paid plan chosen | Expanded Profile. Open first loan, a second loan amount when present, tax bill, and delinquent year. One call per address. Judgments and the docket are not in this report. |
 
 The ATTOM key is `ATTOM_API_KEY` in `~/hestia/.env` on the Umbrel, passed into the container by Compose. The value is not in git.

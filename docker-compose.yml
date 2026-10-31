@@ -12,6 +12,7 @@ services:
       HESTIA_DB: /data/hestia.db
       ATTOM_API_KEY: ${ATTOM_API_KEY:-}
       REALESTATE_API_KEY: ${REALESTATE_API_KEY:-}
+      GOOGLE_MAPS_KEY: ${GOOGLE_MAPS_KEY:-}
     volumes:
       - ./data:/data
     mem_limit: 128m
