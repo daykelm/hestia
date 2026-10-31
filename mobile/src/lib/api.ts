@@ -26,6 +26,20 @@ export type Diligence = {
 
 export type Band = "excellent" | "good" | "fair" | "risky" | "thin";
 
+export type Costs = {
+  rows: { item: string; best: number; worst: number }[];
+  best: number;
+  worst: number;
+  notes: string[];
+  verdict: string;
+  tone: "good" | "warn" | "stop" | "unknown";
+  why: string;
+  ceiling?: number;
+  value?: number;
+  value_label?: string;
+  value_note?: string;
+};
+
 export type Deal = {
   id: number;
   address: string;
@@ -38,6 +52,7 @@ export type Deal = {
   link: string;
   status: string;
   card?: { label: string; text: string }[];
+  costs?: Costs | Record<string, never>;
   street?: { name: string; url: string }[];
   metadata: {
     county?: string;

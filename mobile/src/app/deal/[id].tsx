@@ -4,9 +4,11 @@ import { KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, StyleSh
 import { Aerial } from "../../components/Aerial";
 import { Help } from "../../components/Help";
 import { ScoreDot } from "../../components/ScoreDot";
-import { band, displayName, displayPlace, money, postForm, SignedOut, type Deal } from "../../lib/api";
+import { band, displayName, displayPlace, money, postForm, SignedOut, type Costs, type Deal } from "../../lib/api";
 import { useStore } from "../../lib/store";
 import { bandColor, color, serif } from "../../lib/theme";
+
+const toneColor = { good: bandColor.good, warn: color.amber, stop: bandColor.risky, unknown: color.quiet };
 
 const STEPS = ["Found", "Researched", "Title checked", "Bid set", "Won", "Buyer assigned", "Closed"];
 
@@ -25,6 +27,7 @@ export default function DealScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState<Record<string, string | boolean>>({});
+  const [checksOpen, setChecksOpen] = useState(false);
 
   if (!deal) {
     return (
@@ -59,12 +62,8 @@ export default function DealScreen() {
   const { back, reopen, pass } = moves(deal.status, Boolean(d));
   const at = STEPS.indexOf(deal.status);
 
-  const coords: [string, string, string][] = [
-    ["Sale day", meta.sale_date || "—", "sale"],
-    [meta.price_basis === "final judgment" ? "Final judgment" : "Opening bid", money(deal.price), meta.price_basis === "final judgment" ? "judgment" : "bid"],
-    ["Tax roll value", money(meta.roll_value), "roll"],
-    ["Roll ÷ bid", meta.roll_value && deal.price ? `${(meta.roll_value / deal.price).toFixed(1)}×` : "—", "ratio"],
-  ];
+  const coords: [string, string, string][] = [["Sale day", meta.sale_date || "—", "sale"]];
+  const costs = deal.costs?.rows ? (deal.costs as Costs) : null;
   if (meta.parcel) coords.push(["Parcel", meta.parcel, "parcel"]);
   if (meta.case) coords.push(["Case", meta.case, "case"]);
 
@@ -76,12 +75,40 @@ export default function DealScreen() {
         <Text style={styles.where}>{[displayPlace(deal.location), deal.source].filter(Boolean).join(" · ")}</Text>
         {d?.point ? <Aerial point={d.point} name={displayName(deal.address)} /> : null}
         {d?.house ? <Text style={styles.house}>{d.house}</Text> : null}
+        {costs ? (
+          <View style={styles.costs}>
+            <Text style={[styles.costVerdict, { color: toneColor[costs.tone] }]}>{costs.verdict}</Text>
+            {costs.why ? <Text style={styles.quiet}>{costs.why}</Text> : null}
+            {costs.ceiling ? <Text style={styles.costCeiling}>Highest bid that fits: {money(costs.ceiling)}</Text> : null}
+            <View style={styles.costRow}>
+              <Text style={[styles.costItem, styles.dt]}>All in</Text>
+              <Text style={[styles.costAmount, styles.dt]}>Best</Text>
+              <Text style={[styles.costAmount, styles.dt]}>Worst</Text>
+            </View>
+            {costs.rows.map((row) => (
+              <View key={row.item} style={[styles.costRow, styles.costLine]}>
+                <Text style={styles.costItem}>{row.item}</Text>
+                <Text style={styles.costAmount}>{money(row.best)}</Text>
+                <Text style={styles.costAmount}>{money(row.worst)}</Text>
+              </View>
+            ))}
+            <View style={[styles.costRow, styles.costTotal]}>
+              <Text style={[styles.costItem, styles.costTotalText]}>Total</Text>
+              <Text style={[styles.costAmount, styles.costTotalText]}>{money(costs.best)}</Text>
+              <Text style={[styles.costAmount, styles.costTotalText]}>{money(costs.worst)}</Text>
+            </View>
+            {costs.value ? <Text style={styles.quiet}>{costs.value_label} {money(costs.value)}. {costs.value_note}</Text> : null}
+            {costs.notes.map((note) => (
+              <Text key={note} style={styles.note}>{note}</Text>
+            ))}
+          </View>
+        ) : null}
         {deal.card?.length ? (
           <View style={styles.brief}>
             {deal.card.map((line) => (
               <View key={line.label} style={styles.briefItem}>
                 <Text style={styles.dt}>{line.label}</Text>
-                <Text style={[styles.briefText, (line.label === "Danger" && line.text !== "None on record" || line.label === "Tax" && line.text.startsWith("Delinquent") || line.label === "Cause" && (line.text.includes("HOA") || line.text.includes(" and ")) || line.label === "Also" && (line.text.startsWith("Not this door") || line.text.startsWith("Parcel record") || line.text.includes("Disagrees"))) && { color: color.amber }]}>{line.text}</Text>
+                <Text style={[styles.briefText, (line.label === "Danger" && line.text !== "None on record" || line.label === "Cause" && (line.text.includes("HOA") || line.text.includes(" and ")) || line.label === "Also") && { color: color.amber }]}>{line.text}</Text>
               </View>
             ))}
           </View>
@@ -199,7 +226,10 @@ export default function DealScreen() {
                 • {flag}
               </Text>
             ))}
-            {d.factors.map((f) => (
+            <Pressable onPress={() => setChecksOpen((open) => !open)} accessibilityRole="button" accessibilityState={{ expanded: checksOpen }} style={styles.checksToggle}>
+              <Text style={styles.link}>{checksOpen ? "Hide the seven checks" : "Seven checks"}</Text>
+            </Pressable>
+            {checksOpen ? d.factors.map((f) => (
               <View key={f.name} style={styles.factor}>
                 <View style={styles.factorHead}>
                   <View style={styles.rowCenter}>
@@ -219,7 +249,7 @@ export default function DealScreen() {
                 <Text style={styles.note}>{f.note}</Text>
                 {f.sources?.length ? <Text style={styles.sources}>{f.sources.join(" + ")}</Text> : null}
               </View>
-            ))}
+            )) : null}
             {d.identity?.note ? <Text style={styles.sources}>{d.identity.note}</Text> : null}
           </>
         ) : (
@@ -359,5 +389,15 @@ const styles = StyleSheet.create({
   brief: { flexDirection: "row", flexWrap: "wrap", rowGap: 14, marginTop: 16 },
   briefItem: { width: "50%", paddingRight: 12 },
   briefText: { color: color.dust, fontSize: 15, lineHeight: 20, marginTop: 2 },
+  costs: { marginTop: 16, gap: 6 },
+  costVerdict: { fontFamily: serif, fontSize: 24, lineHeight: 28 },
+  costCeiling: { color: color.dust, fontSize: 15, marginTop: 2 },
+  costRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 6 },
+  costLine: { borderTopWidth: 1, borderTopColor: color.chart, paddingTop: 6 },
+  costItem: { flex: 1, color: color.quiet, fontSize: 14 },
+  costAmount: { color: color.dust, fontSize: 14, minWidth: 72, textAlign: "right", fontVariant: ["tabular-nums"] },
+  costTotal: { borderTopWidth: 1, borderTopColor: color.fog, paddingTop: 8 },
+  costTotalText: { color: color.dust, fontSize: 16 },
+  checksToggle: { minHeight: 44, justifyContent: "center", marginTop: 8 },
   street: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 14, marginTop: 16 },
 });

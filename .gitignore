@@ -4,6 +4,7 @@ data/*.db
 .DS_Store
 .cursor/
 .tools/
+.claude/settings.local.json
 android/build/
 android/*.keystore
 static/hestia.apk

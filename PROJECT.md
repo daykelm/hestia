@@ -38,4 +38,4 @@ The Android app is built. It uses the same API as the web desk. Stack, providers
 
 ## Future Possibility
 
-If the tool becomes highly valuable for me, it can later be cleaned up and offered to a small group of other investors. That is optional and secondary.
+I am the first user of many, and so far the only one. I see more potential in this than a personal tool and am putting more work into it. My own deal flow still comes first, and accounts wait until a second user is close. What it takes to get there is in `FEATURES.md`, under "Toward many users."

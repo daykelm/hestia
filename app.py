@@ -393,23 +393,14 @@ def _factors_html(deal):
 
 
 def card_lines(deal):
-    """The four lines that decide a deal. The seven checks stay behind them."""
+    """Only what the cost block does not already say. The seven checks stay behind them."""
     row = _meta(deal).get("diligence") or {}
     factors = {item.get("name"): item for item in row.get("factors") or []}
-    resale = factors.get("Resale value") or {}
-    if not row.get("score"):
-        worth = "Not scored yet"
-    elif (resale.get("points") or 0) >= 2:
-        worth = "Roll confirmed by a recent sale"
-    elif resale.get("checked", True):
-        worth = "Roll only. No recent sale agrees"
-    else:
-        worth = "Value not confirmed"
-    ratio = _ratio(deal)
-    room = "No bid to compare" if ratio == "—" else f"Roll is {ratio} the bid"
     flags = row.get("flags") or []
     danger = flags[0] if flags else "None on record"
-    open_names = [
+    # shortcut: no source can tell if the building still stands, so it stays open until a permit or demolition feed exists
+    open_names = ["Building still standing"]
+    open_names += [
         item["name"]
         for item in row.get("factors") or []
         if item.get("checked") is False and item.get("name") not in ("Title", "Other liens")
@@ -420,24 +411,44 @@ def card_lines(deal):
     liens = factors.get("Other liens") or {}
     if liens and liens.get("checked") is False:
         open_names.append("Other liens")
-    still = ", ".join(open_names) if open_names else "The public sources have answered"
     lines = []
-    if row.get("cause"):
+    if row.get("cause") and row["cause"] != "Taxes":
         lines.append({"label": "Cause", "text": row["cause"]})
     lines += [
-        {"label": "Worth", "text": worth},
-        {"label": "Room", "text": room},
         {"label": "Danger", "text": danger},
-        {"label": "Still open", "text": still},
+        {"label": "Still open", "text": ", ".join(open_names)},
     ]
-    if row.get("loan"):
-        lines.append({"label": "Loan", "text": row["loan"]})
-    if row.get("tax"):
-        lines.append({"label": "Tax", "text": row["tax"]})
     also = diligence.reapi_sentence(row.get("reapi"), deal.get("address") or "", row.get("loan") or "", row.get("tax") or "")
-    if also:
+    if also and (also.startswith(("Not this door", "Parcel record")) or "Disagrees" in also):
         lines.append({"label": "Also", "text": also})
     return lines
+
+
+def deal_costs(deal):
+    return diligence.costs(deal.get("price"), _meta(deal), deal.get("estimated_value"))
+
+
+def _costs(deal):
+    found = deal_costs(deal)
+    if not found:
+        return ""
+    rows = "".join(
+        f'<tr><th scope="row">{html.escape(item["item"])}</th><td>{money(item["best"])}</td><td>{money(item["worst"])}</td></tr>'
+        for item in found["rows"]
+    )
+    ceiling = f'<p class="cost-ceiling">Highest bid that fits: {money(found["ceiling"])}</p>' if found.get("ceiling") else ""
+    value = ""
+    if found.get("value"):
+        value = f'<p class="cost-value">{html.escape(found["value_label"])} {money(found["value"])}. {html.escape(found["value_note"])}</p>'
+    why = f'<p class="cost-why">{html.escape(found["why"])}</p>' if found["why"] else ""
+    notes = "".join(f"<li>{html.escape(note)}</li>" for note in found["notes"])
+    return (
+        '<section class="costs" aria-label="Total cost">'
+        f'<p class="cost-verdict tone-{found["tone"]}">{html.escape(found["verdict"])}</p>{why}{ceiling}'
+        '<table><thead><tr><th scope="col">All in</th><th scope="col">Best</th><th scope="col">Worst</th></tr></thead>'
+        f'<tbody>{rows}</tbody><tfoot><tr><th scope="row">Total</th><td>{money(found["best"])}</td><td>{money(found["worst"])}</td></tr></tfoot></table>'
+        f'{value}<ul class="cost-notes">{notes}</ul></section>'
+    )
 
 
 def appraiser_url(meta):
@@ -477,15 +488,12 @@ def _brief(deal):
     for line in card_lines(deal):
         marked = (
             (line["label"] == "Danger" and line["text"] != "None on record")
-            or (line["label"] == "Tax" and line["text"].startswith("Delinquent"))
             or (line["label"] == "Cause" and ("HOA" in line["text"] or " and " in line["text"]))
-            or (line["label"] == "Also" and (line["text"].startswith("Not this door") or line["text"].startswith("Parcel record") or "Disagrees" in line["text"]))
+            or line["label"] == "Also"
         )
         hot = " hot" if marked else ""
         lines.append(f'<div><dt>{html.escape(line["label"])}</dt><dd class="{hot.strip()}">{html.escape(line["text"])}</dd></div>')
-    house = (_meta(deal).get("diligence") or {}).get("house") or ""
-    house_html = f'<p class="house">{html.escape(house)}</p>' if house else ""
-    return f'{house_html}<dl class="brief">{"".join(lines)}</dl>'
+    return f'<dl class="brief">{"".join(lines)}</dl>'
 
 
 def _street(deal):
@@ -501,15 +509,7 @@ def _plate(deal, next_query):
     did = int(deal["id"])
     score = _score(deal)
     href = safe_href(deal.get("link"))
-    bid_key = "judgment" if meta.get("price_basis") == "final judgment" else "bid"
-    coords = [
-        ("Sale day", meta.get("sale_date") or "—", "sale"),
-        (_bid_label(deal), money(deal.get("price")), bid_key),
-        ("Tax roll value", money(meta.get("roll_value")), "roll"),
-    ]
-    if deal.get("estimated_value") is not None:
-        coords.append(("Your value", money(deal.get("estimated_value")), "your_value"))
-        coords.append(("Spread", money(deal.get("spread")), "spread"))
+    coords = [("Sale day", meta.get("sale_date") or "—", "sale")]
     if meta.get("parcel"):
         coords.append(("Parcel", meta["parcel"], "parcel"))
     if meta.get("case"):
@@ -527,6 +527,7 @@ def _plate(deal, next_query):
     link = f'<a class="out" href="{html.escape(href, quote=True)}" rel="noreferrer" target="_blank">Open the auction listing</a>' if href else ""
     band = _band(deal)
     score_text = f"{score} of 10" if score else "Unscored"
+    house = (meta.get("diligence") or {}).get("house") or ""
     return (
         f'<article class="plate" id="d{did}" aria-labelledby="d{did}-name"'
         f' data-id="{did}" data-bid="{deal.get("price") or ""}" data-roll="{meta.get("roll_value") or ""}"'
@@ -538,6 +539,8 @@ def _plate(deal, next_query):
         f'<p class="where">{html.escape(place)}</p>'
         "</header>"
         f"{_aerial(deal)}"
+        f'{f"<p class=house>{html.escape(house)}</p>" if house else ""}'
+        f"{_costs(deal)}"
         f"{_brief(deal)}"
         f"{_step_panel(deal, next_query)}"
         f'<dl class="coords">{coord_html}</dl>'
@@ -618,8 +621,8 @@ def _index_row(deal):
 def _row_hint(deal):
     place = display_place(deal.get("location"))
     card = {line["label"]: line["text"] for line in card_lines(deal)}
-    hint = card["Room"] if card["Danger"] == "None on record" else card["Danger"]
-    if hint in ("Not scored yet", "No bid to compare"):
+    hint = deal_costs(deal).get("verdict", "") if card["Danger"] == "None on record" else card["Danger"]
+    if hint == "Not scored yet":
         hint = ""
     return " · ".join(part for part in (place, hint) if part)
 
@@ -1133,7 +1136,7 @@ def _prepare(deal):
     url = sources.bid_url(meta)
     if url:
         meta["bid_url"] = url
-    return {**deal, "metadata": meta, "card": card_lines(deal), "street": street_links(deal)}
+    return {**deal, "metadata": meta, "card": card_lines(deal), "costs": deal_costs(deal), "street": street_links(deal)}
 
 
 def _with_hash(nxt, deal_id):

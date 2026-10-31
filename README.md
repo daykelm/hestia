@@ -2,7 +2,7 @@
 
 A private desk for one person working South Florida auction and tax-deed sales. It collects the next sale lists, checks each parcel against public records, and puts a short card on the ones worth opening.
 
-The name is Hestia, the Greek goddess of the hearth and home. This is not a marketplace and not a product for other investors.
+The name is Hestia, the Greek goddess of the hearth and home. This is not a marketplace. Its builder is the first user of many, and so far the only one. What it takes to get there is in [FEATURES.md](FEATURES.md).
 
 The desk runs on a home Umbrel, at `umbrel.local:18080` and at [hestia.trading](https://hestia.trading) behind Cloudflare Access. The same machine runs a Bitcoin node and ckpool. Hestia does not join them.
 
@@ -46,6 +46,7 @@ sources.py        RealAuction calendars
 diligence.py      research and the score
 static/           the web desk
 mobile/           the Android app (Expo)
+android/          the WebView Android shell
 docs/stack.md     stack, providers, and plans
 PRODUCT.md        who it is for
 FEATURES.md       what to build next

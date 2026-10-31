@@ -25,6 +25,12 @@ FIPS = {"Broward": "12011", "Miami-Dade": "12086", "Lee": "12071"}
 _UNIT = re.compile(r"(?:#|\b(?:APT|UNIT|STE|SUITE)\b)\s*[A-Z0-9-]+", re.I)
 
 RECENT_SALE_YEAR = 2023
+# Planning estimates. Replace them with real quotes from a title company or a closed deal.
+COST_STAMP_RATE = 0.007
+COST_RECORDING = 500
+COST_QUIET_TITLE = (2500, 5000)
+COST_VALUE_SHARE = 0.7
+LOAN_GAP = 1.1
 BANDS = {
     "excellent": "Excellent",
     "good": "Good",
@@ -236,6 +242,110 @@ def sale_cause(kind, case, tax=""):
     if delinquent:
         return "Taxes"
     return ""
+
+
+def _amounts(text):
+    return [float(item.replace(",", "")) for item in re.findall(r"\$([\d,]+)", text or "")]
+
+
+def _money_text(number):
+    return f"${number:,.0f}"
+
+
+def _same_door(report):
+    return report if (report or {}).get("match") in ("parcel", "address") else {}
+
+
+def _row(item, best, worst):
+    return {"item": item, "best": round(best), "worst": round(worst)}
+
+
+def costs(price, meta, estimated_value=None, today=None):
+    """What a deal could cost in total, and whether that fits its value. Dollar estimates are the COST_ constants, not quotes."""
+    row = (meta or {}).get("diligence") or {}
+    kind = ((meta or {}).get("kind") or "").lower()
+    tax_deed = kind == "tax deed"
+    court = court_of((meta or {}).get("case"))
+    paid = meta.get("won_price") or meta.get("max_bid") or price
+    if meta.get("won_price"):
+        label = "Won at"
+    elif meta.get("max_bid"):
+        label = "Your ceiling"
+    else:
+        label = "Final judgment" if meta.get("price_basis") == "final judgment" else "Opening bid"
+    if not paid:
+        return {}
+
+    loan_text = row.get("loan") or ""
+    tax_text = row.get("tax") or ""
+    report = _same_door(row.get("reapi"))
+    # A blank from one report does not prove there is no loan, so the larger of the two sets the worst case.
+    answers = [sum(_amounts(text)) for text in (loan_text, report.get("loan")) if text] or [0]
+    low = min(answers)
+    loans = [max(answers)] if max(answers) else []
+    bills = _amounts(tax_text) + _amounts(report.get("tax"))
+    bill = max(bills) if bills else 0
+    closing = paid * COST_STAMP_RATE + COST_RECORDING
+    rows = [_row(label, paid, paid), _row("Deed stamps and recording", closing, closing)]
+    notes = []
+
+    if tax_deed:
+        rows.append(_row("Quiet title", *COST_QUIET_TITLE))
+        if loans:
+            notes.append(f"The {_money_text(sum(loans))} loan is not added. A Florida tax deed clears private mortgages (F.S. 197.552), if the lender got proper notice. Confirm that in the tax deed file.")
+        if bill:
+            notes.append("The opening bid already includes the back taxes. Only the next year's bill is added.")
+    elif loans:
+        total = sum(loans)
+        if court == "county":
+            rows.append(_row("Loan that stays on the property", low, total))
+            notes.append("An association foreclosure leaves the mortgage in place. This is the amount on the report, not the payoff.")
+        else:
+            rows.append(_row("Loan, if the sale does not clear it", 0, total))
+            notes.append("A sale on the first mortgage clears the loan. A sale on a junior lien does not. The docket says which. This is the amount on the report, not the payoff.")
+    if loans and low != loans[0]:
+        notes.append(f"The two loan reports differ: {_money_text(low)} and {_money_text(loans[0])}. The higher one sets the worst case. The county records decide which is right.")
+    late = re.match(r"Delinquent since (\d{4})", tax_text)
+    if late and bill and not tax_deed:
+        years = max(1, (today or date.today()).year - int(late.group(1)))
+        owed = bill * years
+        rows.append(_row("Back taxes, which a foreclosure does not clear", owed, owed))
+    if bill and not late or (bill and tax_deed):
+        rows.append(_row("Next year's tax bill", 0, bill))
+
+    best = sum(item["best"] for item in rows)
+    worst = sum(item["worst"] for item in rows)
+    notes.append("Not counted: repairs, government liens that survive the sale, and any bidding past this price.")
+    found = {"rows": rows, "best": best, "worst": worst, "notes": notes, "verdict": "", "tone": "unknown", "why": ""}
+
+    value = estimated_value or meta.get("roll_value")
+    limit = value * COST_VALUE_SHARE if value else 0
+    # Stamps grow with the bid, so the ceiling is solved with them in it.
+    fixed = worst - paid - paid * COST_STAMP_RATE
+    ceiling = round((limit - fixed) / (1 + COST_STAMP_RATE))
+    if value:
+        found["value"] = value
+        found["value_label"] = "Your value" if estimated_value else "Tax roll value"
+        resale = next((item for item in row.get("factors") or [] if item.get("name") == "Resale value"), {})
+        found["value_note"] = "" if estimated_value else "A recent sale agrees." if (resale.get("points") or 0) >= 2 else "No recent sale confirms it."
+    flags = row.get("flags") or []
+    if not row.get("score"):
+        found["verdict"] = "Not scored yet"
+    elif not value:
+        found.update(verdict="Can't say yet", why="No value to compare against.")
+    elif row.get("band") == "thin":
+        found.update(verdict="Can't say yet", why="The records do not agree enough on this property.")
+    elif not tax_deed and not loan_text and not report.get("loan"):
+        found.update(verdict="Can't say yet", why="No loan report, so the worst case is unknown.")
+    elif best > limit:
+        found.update(verdict="Pass at this price", tone="stop", why=f"Even the best case is over {COST_VALUE_SHARE:.0%} of the value.")
+    elif worst > limit:
+        found.update(verdict="Only if the title clears", tone="warn", why=f"The best case fits. The worst case is over {COST_VALUE_SHARE:.0%} of the value.")
+    elif flags:
+        found.update(verdict="Numbers fit, danger open", tone="warn", why=flags[0], ceiling=ceiling)
+    else:
+        found.update(verdict="Worth a title check", tone="good", why=f"The worst case is under {COST_VALUE_SHARE:.0%} of the value.", ceiling=ceiling)
+    return found
 
 
 def title_flag(kind, case, tax=""):
@@ -874,8 +984,10 @@ def reapi_sentence(report, listing="", loan="", tax=""):
     if _extra_unit(listing, found):
         body = f"Parcel record is {found}. {body}"
     open_loan = _loan_open(loan), _loan_open(report.get("loan") or "")
-    late = _tax_late(tax), _tax_late(report.get("tax") or "")
-    if (None not in open_loan and open_loan[0] != open_loan[1]) or (None not in late and late[0] != late[1]):
+    amounts = sum(_amounts(loan)), sum(_amounts(report.get("loan")))
+    # This report only marks delinquency when it holds a tax lien, so its silence is not a no.
+    late = _tax_late(tax) is False and _tax_late(report.get("tax") or "") is True
+    if (None not in open_loan and open_loan[0] != open_loan[1]) or late or (all(amounts) and max(amounts) > min(amounts) * LOAN_GAP):
         body += " Disagrees with the loan report."
     return body
 

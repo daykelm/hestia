@@ -142,7 +142,7 @@ class DealTests(unittest.TestCase):
         )
         self.assertIn("Today", grouped)
         self.assertIn('class="thumb"', grouped)
-        self.assertIn("Worth", grouped)
+        self.assertIn('class="costs"', grouped)
         self.assertIn("Zillow", grouped)
         self.assertIn("google.com/maps/search", grouped)
         self.assertIn(">Look up<", grouped)
@@ -250,7 +250,7 @@ class DealTests(unittest.TestCase):
         )
         self.assertEqual(unit["match"], "unit")
         self.assertTrue(diligence.reapi_sentence(unit, "12 SW 3 AVE").startswith("Not this door"))
-        self.assertIn("Disagrees", diligence.reapi_sentence(same, "12 SW 3 AVE", "No open loan on the report", "Delinquent since 2023"))
+        self.assertNotIn("Disagrees", diligence.reapi_sentence(same, "12 SW 3 AVE", "No open loan on the report", "Delinquent since 2023"))
         self.assertFalse(record["homestead"])
         comps = diligence.parse_broward_comps(
             "5/15/2026 04 WD 120890819 Q $203,000 6/26/2026 04 QCD 120993106 T $100 "
@@ -351,6 +351,66 @@ class DealTests(unittest.TestCase):
             {"status": "", "location": "Tampa", "source": "", "min_price": "", "max_price": ""},
         )
         self.assertIn('name="next" value="/?location=Tampa"', kept)
+
+    def test_costs_do_not_add_a_loan_a_tax_deed_clears(self):
+        meta = {
+            "kind": "Tax deed",
+            "roll_value": 400000,
+            "diligence": {"score": 7, "band": "good", "loan": "GUARANTEED RATE INC · $627,588 · 2024", "tax": "Tax bill $7,655 for 2025"},
+        }
+        found = diligence.costs(38261.38, meta)
+        self.assertEqual(found["best"], 41529)
+        self.assertEqual(found["worst"], 51684)
+        self.assertEqual(found["verdict"], "Worth a title check")
+        self.assertIn("$627,588 loan is not added", found["notes"][0])
+        self.assertEqual(found["ceiling"], 264990)
+
+    def test_costs_keep_the_loan_on_an_association_foreclosure(self):
+        meta = {
+            "kind": "Foreclosure",
+            "case": "COCE-24-001",
+            "roll_value": 300000,
+            "diligence": {"score": 6, "band": "good", "loan": "BANK · $250,000 · 2020", "tax": "Delinquent since 2024, bill $4,000"},
+        }
+        found = diligence.costs(20000, meta, today=date(2026, 10, 30))
+        self.assertEqual(found["verdict"], "Pass at this price")
+        self.assertEqual(found["best"], 278640)
+        self.assertEqual(found["worst"], found["best"])
+
+    def test_costs_take_the_higher_loan_when_reports_differ(self):
+        meta = {
+            "kind": "Foreclosure",
+            "case": "CACE-26-000648",
+            "roll_value": 420660,
+            "diligence": {
+                "score": 7,
+                "band": "good",
+                "loan": "No open loan on the report",
+                "tax": "Tax bill $2,119 for 2025",
+                "reapi": {"match": "parcel", "loan": "Trust Mortgage · $750,000 · 2023", "tax": "Tax bill $2,059 for 2024"},
+            },
+        }
+        found = diligence.costs(272157.74, meta)
+        self.assertEqual(found["verdict"], "Only if the title clears")
+        self.assertGreater(found["worst"], 1000000)
+        self.assertIn("reports differ", " ".join(found["notes"]))
+        meta["diligence"]["reapi"]["match"] = "other"
+        self.assertEqual(diligence.costs(272157.74, meta)["verdict"], "Worth a title check")
+
+    def test_silence_on_delinquency_is_not_a_disagreement(self):
+        report = {"match": "parcel", "loan": "No open loan on the report", "tax": "Tax bill $900 for 2024"}
+        line = diligence.reapi_sentence(report, "1 A ST", "No open loan on the report", "Delinquent since 2022, bill $900")
+        self.assertNotIn("Disagrees", line)
+        report["loan"] = "BANK · $393,000 · 2005"
+        line = diligence.reapi_sentence(report, "1 A ST", "BANK · $80,000 · 2004", "Tax bill $900 for 2024")
+        self.assertIn("Disagrees", line)
+
+    def test_costs_say_when_they_cannot_judge(self):
+        self.assertEqual(diligence.costs(None, {}), {})
+        unscored = diligence.costs(1000, {"kind": "Tax deed", "roll_value": 9000})
+        self.assertEqual(unscored["verdict"], "Not scored yet")
+        no_report = diligence.costs(1000, {"kind": "Foreclosure", "roll_value": 9000, "diligence": {"score": 6, "band": "good"}})
+        self.assertEqual(no_report["verdict"], "Can't say yet")
 
 
 if __name__ == "__main__":

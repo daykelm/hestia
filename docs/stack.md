@@ -63,20 +63,38 @@ The cause is read from the auction type, the court in the case number, and the A
 
 County-court case numbers are the ones Hestia can see as COCE, CONO, COSO, COWE, or a county-court marker. Circuit numbers are CACE or a CA marker. An HOA suit filed in circuit court still reads as Mortgage until the docket is opened.
 
-The card, in order: Cause, Worth, Room, Danger, Still open, then Loan and Tax when ATTOM returned them, then Also when a RealEstateAPI report is stored. Worth is whether a sale since 2023 agrees with the roll. Room is how many times the roll covers the bid. Danger is the first flag, or "None on record." Still open is whatever no source answered, plus the court docket until it is checked, plus other liens until that search is done. The seven factors stay behind the card: resale value, comparables, title, code and building, flood, occupancy, and other liens.
+The card opens on the total cost, then Danger and Still open. Cause shows when it is not plain taxes, and Also shows only when it disagrees or names another door. Parcel and case sit lower, and the seven factors stay behind the card: resale value, comparables, title, code and building, flood, occupancy, and other liens.
 
-Also is the second loan-and-tax report. It does not change the band. "Disagrees" means one side says a loan is open and the other does not, or one side says the tax is delinquent and the other does not. Two different dollar amounts can still sit on a line that does not say Disagrees. "Parcel record is …" means the county parcel id came back as a unit the auction list did not name. "Not this door" means the report is a different address. "No record for this address" means the lookup missed.
+## What a deal costs in total
 
-On the 98 sales that were on the desk when this was pulled:
+`diligence.costs` adds a best and a worst case, then compares them with 70% of the value. The value is your own, or the tax roll if you have not set one. The roll is a yardstick and lags the market.
 
-| Also line | Deals |
+| Line | Tax deed | Foreclosure |
+| --- | --- | --- |
+| Price | Opening bid, your ceiling, or the won price | Final judgment, your ceiling, or the won price |
+| Stamps and recording | 0.7% plus $500 | 0.7% plus $500 |
+| Quiet title | $2,500 best, $5,000 worst | None |
+| Open loan | Not added. F.S. 197.552 clears private mortgages. Municipal, county, special district, and community development district liens survive | County court: added to both. Otherwise worst case only |
+| Back taxes | Already in the opening bid | Added to both |
+| Next year's tax bill | Worst case only | Worst case only |
+
+The dollar figures and the 70% are planning estimates in the `COST_` constants of `diligence.py`, not quotes. Repairs, surviving government liens, and bidding past the price are not counted. The loan is the amount on the report, not the payoff. Nothing yet tells Hestia that a building still stands, so that stays on Still open for every deal.
+
+| Verdict | When |
 | --- | --- |
-| Same door, and the same yes or no on an open loan and on delinquency | 40 |
-| Disagrees on an open loan or on delinquency | 45 |
-| Parcel record is a unit the sale list did not name | 20 |
-| No record (12513 Stone Valley Loop) | 1 |
+| Worth a title check | The worst case is at or under 70% of the value, with no flag |
+| Numbers fit, danger open | The same, with a flag |
+| Only if the title clears | The best case fits and the worst does not |
+| Pass at this price | The best case is over 70% |
+| Can't say yet | No value, not enough data, or a foreclosure with no loan report |
 
-Eight of those 20 unit records are also in the 45 disagreements, so the rows overlap. The pull used the county parcel id after street matches kept returning a unit. About 160 lookups, about $16 of the $200 credit. The balance left at the vendor was not read back. A rescore keeps the stored report and does not buy it again.
+Also is the second loan-and-tax report. It does not change the band, and it does change the cost. "Disagrees" means one side says a loan is open and the other does not, the loan amounts differ by more than 10%, or RealEstateAPI marks a delinquency ATTOM does not. RealEstateAPI marked no delinquency on any of the 98 sales, including the tax deeds, so its silence is not read as a no. "Parcel record is …" means the county parcel id came back as a unit the auction list did not name. "Not this door" means the report is a different address. "No record for this address" means the lookup missed.
+
+The cost block uses both reports. When they differ on a loan, the higher amount sets the worst case. On a tax deed that changes nothing, because the deed clears private mortgages. A report for another door or unit is not used.
+
+On the 98 sales that were on the desk when this was pulled, the first comparison counted 45 disagreements. 22 of them were only about delinquency, which is the silence above. Of the 23 loan disagreements, ATTOM showed no loan and RealEstateAPI showed one 18 times. 16 of those were foreclosures. A lawsuit to foreclose usually means a loan exists, so ATTOM's "No open loan" should not be read as proof. It is not yet known why it misses them. `parse_attom` reads only `FirstConcurrent`, which may cover only the loan recorded with the last sale. No county record has checked either report yet.
+
+About 160 lookups, about $16 of the $200 credit. The balance left at the vendor was not read back. A rescore keeps the stored report and does not buy it again.
 
 ## Providers in the score
 
@@ -103,7 +121,7 @@ The comparison was about a second loan-and-tax source, not a replacement for the
 
 | Vendor | Published offer | Decision |
 | --- | --- | --- |
-| RealEstateAPI pay as you go | $0.10 per property record, no minimum, no autocomplete. A $200 credit is in use. | Pulled for the current sale list. The Also line on the card shows it. The score still uses ATTOM. A street match often returned a different unit, so the pull prefers the county parcel id. |
+| RealEstateAPI pay as you go | $0.10 per property record, no minimum, no autocomplete. A $200 credit is in use. | Pulled for the current sale list. The Also line on the card shows it. The score still uses ATTOM. The cost block uses both. A street match often returned a different unit, so the pull prefers the county parcel id. |
 | RealEstateAPI Starter | $599 a month, 30,000 credits. The published price assumes an annual term. | Not bought. |
 | RealEstateAPI Growth | $1,200 a month, 150,000 credits | Not bought. |
 | RealEstateAPI Pro | $2,500 a month, 400,000 credits | Not bought. |

@@ -8,7 +8,7 @@ web
 
 ## Users
 
-One operator: the builder, a solo real estate wholesaler working South Florida. He uses Hestia on a Mac at a desk and on his phone, about equally. His job is to find discounted auction and tax-deed properties early, judge them fast, and assign the good ones to cash buyers.
+One operator so far, and the first of many: the builder, a solo real estate wholesaler working South Florida. He uses Hestia on a Mac at a desk and on his phone, about equally. His job is to find discounted auction and tax-deed properties early, judge them fast, and assign the good ones to cash buyers.
 
 ## Product Purpose
 
@@ -29,7 +29,7 @@ Wholesaler CRMs start from leads someone already found. Auction desks stop at a 
 
 - Collect upcoming tax deed and foreclosure sales. Price is the opening bid, or the final judgment for foreclosures.
 - Score from 1 to 10 on seven factors: resale value, comparables, title, code and building, flood, occupancy, and other liens. A factor counts only after a source answers it. Excellent requires his own lien search, not just the ATTOM report.
-- The card is cause, worth, room, danger, and what is still open, plus the loan and the tax bill when ATTOM returned them, plus an Also line from RealEstateAPI. Cause separates taxes, an HOA lien, a mortgage, or more than one. The Also line does not change the score.
+- The card opens on the total cost, best and worst, and a verdict against 70% of the value. It then shows the danger and what is still open. The loan and the tax bill are explained inside the cost, not listed beside it.
 - Steps: Found, Researched, Title checked, Bid set, Won, Buyer assigned, Closed. Passed is a deal he dropped. Deals can also be added by hand.
 - The tax roll value is shown beside a deal, never as its estimated value.
 - Keep it light: Python standard library, one SQLite file, and no external font or script hosts. The container is capped at a quarter CPU and 128 MB. The phone app is Expo on Android and reads the same API.

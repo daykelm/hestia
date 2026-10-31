@@ -2,6 +2,19 @@
 
 Prioritized for personal use. Build in this order unless real usage shows a different bottleneck.
 
+## First
+
+These run beside the epics. They cost little, and they decide how far the rest can be trusted.
+
+- [ ] Take one real deal from the sale list to a closing or a recorded loss. No deal has closed yet, so the score has not been tested against a result.
+- [ ] Settle which report is right on loans. ATTOM showed no loan where RealEstateAPI showed one on 16 foreclosures, and the score still reads ATTOM alone, so a deal can stay green with a loan behind it. Check about 10 against the county records and the docket, starting with 3530 Mystic Pointe Dr 411, 8201 NW 16 St, 3240 NW 203 Ln, and 3283 NW 99 St. Check what ATTOM's `FirstConcurrent` covers, and if it misses later loans, stop calling a blank "No open loan" and feed the higher loan into the score.
+- [ ] Close the home port. Port 18080 has no login, and a POST with no `Origin` header passes the same-origin check, so anything on the home network can read and change deals. Require a token, or bind the port to the tunnel only.
+- [ ] Decide what happens when the trials end. ATTOM has no paid plan chosen, and the score loses its loan and tax lines without it. RealEstateAPI has a 14-day trial, and neither its end date nor its balance is recorded here.
+- [ ] Add tests for the RealAuction, ATTOM, and RealEstateAPI parsers, using saved responses. A vendor format change should fail a test, not quietly change a score.
+- [ ] Replace the cost estimates in `diligence.py` with real quotes for quiet title, stamps, and recording, and have a Florida title attorney check the rules behind best and worst.
+- [ ] Find out whether the building still stands. A buyer can pay for a parcel whose building is gone. Try the building and land split on the roll, demolition permits, unsafe-structure cases, and the date of the satellite image. Until then it is a hand check on every deal.
+- [ ] Decide whether the WebView shell in `android/` stays now that the Expo app exists.
+
 ## Epics
 
 These cut steps out of the current desk. The seven steps stay. What goes is the extra click, the repeated number, and the long factor list.
@@ -50,9 +63,23 @@ The ceiling is typed in Hestia, typed again on RealAuction, and the buyer is typ
 
 Done when a pursued deal goes from ceiling to a buyer message without typing the same number twice, and without writing the summary by hand.
 
+## Toward many users
+
+The builder is the first user of many, and so far the only one. Every feature still has to work for that one user first. Nothing here starts before the first real deal, and accounts are not built before a second user is close.
+
+One rule applies now: new work should not make these items harder. The sale, the parcel, and the score belong to everyone. The ceiling, the review, and the buyer belong to one user. Keep them apart in new code, starting with the buyer list.
+
+1. **Accounts and separate data.** There is no app login, only Cloudflare Access. `deals` holds one row per property, and its `metadata` keeps public research beside the ceiling, the won price, and the buyer. Two users cannot follow the same sale. Split it into a shared property and one private deal per user, so research is paid for once. Decide then whether a user's own lien search stays out of the shared score.
+2. **Hosting.** A home Umbrel beside a Bitcoin node, capped at 128 MB, cannot hold customer data. Move to a cloud host with backups. The standard-library server can carry a small group and needs another look past that.
+3. **Data cost and licenses.** The current pull cost about $16 for 98 sales at RealEstateAPI, about 160 lookups. ATTOM has no price yet. These costs set the price of the product. Ask both vendors whether their terms allow use for other people, and check the terms of the county and RealAuction data. Collecting for yourself is not the same as reselling.
+4. **Legal exposure.** Excellent on a property with a missed lien can cost someone real money. Have a lawyer review the wording, the disclaimers, and the terms before charging. Wholesaling rules also differ by state.
+5. **Coverage.** Three Florida counties work today, and much of the parsing is specific to each. Every new county is new work. South Florida is the first market.
+
+The first item in [First](#first) is also the evidence for any of this. A closed deal is what can be shown to another investor.
+
 ## Original list
 
-The items below are the first backlog. Several are already built under newer names: the steps are Found through Closed, the score has colors, and there is a phone app. The epics above are the current work.
+The items below are the first backlog. Several are already built under newer names: the steps are Found through Closed, the score has colors, and there is a phone app. The sections above are the current work.
 
 ## Phase 1 – Minimum Useful Version (Start Here)
 
