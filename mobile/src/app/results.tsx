@@ -5,7 +5,8 @@ import { getJSON } from "../lib/api";
 import { color, serif } from "../lib/theme";
 
 type Entry = { kind: string; total: number; unsold: number; kept: number; outside: number; buyers: number; median?: number };
-type Results = { from?: string; through?: string; counties: { county: string; kinds: Entry[] }[] };
+type Market = { county: string; kind: string; sales: number; median: number; at_70: number };
+type Results = { from?: string; through?: string; counties: { county: string; kinds: Entry[] }[]; market?: Market[] };
 
 const SEGMENTS = { unsold: "#7f7bd0", kept: "#cf7722", outside: "#2f95dd" };
 const percent = (part: number, whole: number) => `${whole ? Math.round((100 * part) / whole) : 0}%`;
@@ -39,6 +40,25 @@ export default function PastResults() {
       </View>
       {error ? <Text style={styles.quiet}>{error}</Text> : null}
       {results ? (["Foreclosure", "Tax deed"] as const).map((kind) => <Kind key={kind} kind={kind} results={results} />) : null}
+      {results?.market?.length ? (
+        <View>
+          <Text style={styles.kind}>Price against the tax roll</Text>
+          <Text style={styles.caption}>What outside buyers paid, as a share of the tax roll. Typical sale. It shows what it took to win, not what a resale brought.</Text>
+          {results.market.map((row) => (
+            <View key={`${row.county}${row.kind}`} style={styles.row}>
+              <View style={styles.rowHead}>
+                <Text style={styles.county}>{row.county} · {row.kind.toLowerCase()}</Text>
+                <Text style={styles.small}>{row.sales} buyers</Text>
+              </View>
+              <View style={styles.paid}>
+                <View style={[styles.paidBar, { width: `${80 * row.median}%` }]} />
+                <Text style={styles.county}>{Math.round(row.median * 100)}%</Text>
+              </View>
+              <Text style={styles.small}>About {Math.round(row.at_70 * 100)}% paid 70% of the roll or less.</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
     </ScrollView>
   );
 }

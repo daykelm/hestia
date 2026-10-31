@@ -88,7 +88,8 @@ export default function DealScreen() {
           <View style={styles.costs}>
             <Text style={[styles.costVerdict, { color: toneColor[costs.tone] }]}>{costs.verdict}</Text>
             {costs.why ? <Text style={styles.quiet}>{costs.why}</Text> : null}
-            {costs.ceiling ? <Text style={styles.costCeiling}>Highest bid that fits: {money(costs.ceiling)}</Text> : null}
+            {costs.ceiling ? <Text style={styles.costCeiling}>Ceiling at 70% of value: {money(costs.ceiling)}</Text> : null}
+            {costs.market_note ? <Text style={styles.quiet}>{costs.market_note}</Text> : null}
             <View style={styles.costRow}>
               <Text style={[styles.costItem, styles.dt]}>All in</Text>
               <Text style={[styles.costAmount, styles.dt]}>Best</Text>

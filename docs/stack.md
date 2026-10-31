@@ -96,6 +96,19 @@ On the 98 sales that were on the desk when this was pulled, the first comparison
 
 About 160 lookups, about $16 of the $200 credit. The balance left at the vendor was not read back. A rescore keeps the stored report and does not buy it again.
 
+## What past sales showed
+
+`history.py` pulled 10,339 closed or canceled auctions from the public RealAuction pages, 10/30/2025 to 10/30/2026. 3,381 sold, 1,549 of them to outside buyers. 1,132 of those outside sales had a state tax roll value on file, and those built the `MARKET` table in `diligence.py`. 245 auctions ended with the bidder walking away.
+
+| What the test found | What changed |
+| --- | --- |
+| 139 of 140 tax deeds looked fine at the opening bid, and 98% sold at least 5% over it | A verdict now says it holds at this price. The card adds what buyers typically paid |
+| Buyers typically paid 58% to 88% of the roll, by county and sale type | The ceiling line shows how often it would have won |
+| A roll can sit above a real sale | The value is the lower of the roll and a confirming recent sale |
+| 106 of 140 tax deeds had under 10% of the roll in the building | A land-heavy roll gets a warning and no ceiling, once scored with the new field |
+
+The test measures what it took to win. It does not measure profit, and it has no record of loans or liens at the time of sale. The roll is today's, not the roll on the sale day. The archive holds one Broward tax deed sale and no Monroe foreclosures. Miami-Dade tax deeds and Palm Beach tax deeds use the pooled row. Lee foreclosures often sold under the judgment, so the judgment is a weak guide there.
+
 ## Providers in the score
 
 ![Providers](graphics/providers.png)

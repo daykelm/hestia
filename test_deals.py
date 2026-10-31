@@ -366,14 +366,30 @@ class DealTests(unittest.TestCase):
         meta = {
             "kind": "Tax deed",
             "roll_value": 400000,
-            "diligence": {"score": 7, "band": "good", "loan": "GUARANTEED RATE INC · $627,588 · 2024", "tax": "Tax bill $7,655 for 2025"},
+            "county": "Miami-Dade",
+            "diligence": {
+                "score": 7, "band": "good", "loan": "GUARANTEED RATE INC · $627,588 · 2024", "tax": "Tax bill $7,655 for 2025",
+                "factors": [{"name": "Resale value", "points": 2, "note": "Roll. A 2023 sale at $350,000 (appraiser) backs it up."}],
+            },
         }
         found = diligence.costs(38261.38, meta)
         self.assertEqual(found["best"], 41529)
         self.assertEqual(found["worst"], 51684)
         self.assertEqual(found["verdict"], "Worth a title check")
         self.assertIn("$627,588 loan is not added", found["notes"][0])
-        self.assertEqual(found["ceiling"], 264990)
+        self.assertEqual(found["value"], 350000)
+        self.assertEqual(found["value_label"], "Recent sale")
+        self.assertEqual(found["ceiling"], 230234)
+        self.assertIn("74% of the tax roll", found["market_note"])
+        self.assertIn("about $296,000 here", found["market_note"])
+        self.assertIn("paid at or under this ceiling", found["market_note"])
+        meta["diligence"]["land_share"] = 0.95
+        heavy = diligence.costs(38261.38, meta)
+        self.assertNotIn("ceiling", heavy)
+        self.assertIn("is land", heavy["notes"][0])
+        meta["diligence"].pop("land_share")
+        meta["diligence"]["factors"][0]["points"] = 1
+        self.assertNotIn("ceiling", diligence.costs(38261.38, meta))
 
     def test_costs_keep_the_loan_on_an_association_foreclosure(self):
         meta = {

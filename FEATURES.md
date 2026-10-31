@@ -11,6 +11,7 @@ These run beside the epics. They cost little, and they decide how far the rest c
 - [ ] Close the home port. Port 18080 has no login, and a POST with no `Origin` header passes the same-origin check, so anything on the home network can read and change deals. Require a token, or bind the port to the tunnel only.
 - [ ] Decide what happens when the trials end. ATTOM has no paid plan chosen, and the score loses its loan and tax lines without it. RealEstateAPI has a 14-day trial, and neither its end date nor its balance is recorded here.
 - [ ] Add tests for the RealAuction, ATTOM, and RealEstateAPI parsers, using saved responses. A vendor format change should fail a test, not quietly change a score.
+- [ ] Test verdicts against profit. Past results show what it took to win, not what a resale brought. Add later resale prices from the county rolls, and find out why lenders kept homes at a median 39% of the roll with no outside bid over them.
 - [ ] Replace the cost estimates in `diligence.py` with real quotes for quiet title, stamps, and recording, and have a Florida title attorney check the rules behind best and worst.
 - [ ] Find out whether the building still stands. A buyer can pay for a parcel whose building is gone. Try the building and land split on the roll, demolition permits, unsafe-structure cases, and the date of the satellite image. Until then it is a hand check on every deal.
 - [ ] Decide whether the WebView shell in `android/` stays now that the Expo app exists.

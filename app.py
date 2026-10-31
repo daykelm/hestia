@@ -437,7 +437,8 @@ def _costs(deal):
         f'<tr><th scope="row">{html.escape(item["item"])}</th><td>{money(item["best"])}</td><td>{money(item["worst"])}</td></tr>'
         for item in found["rows"]
     )
-    ceiling = f'<p class="cost-ceiling">Highest bid that fits: {money(found["ceiling"])}</p>' if found.get("ceiling") else ""
+    ceiling = f'<p class="cost-ceiling">Ceiling at 70% of value: {money(found["ceiling"])}</p>' if found.get("ceiling") else ""
+    market = f'<p class="cost-value">{html.escape(found["market_note"])}</p>' if found.get("market_note") else ""
     value = ""
     if found.get("value"):
         help_key = "your_value" if found["value_label"] == "Your value" else "roll"
@@ -446,7 +447,7 @@ def _costs(deal):
     notes = "".join(f"<li>{html.escape(note)}</li>" for note in found["notes"])
     return (
         '<section class="costs" aria-label="Total cost">'
-        f'<p class="cost-verdict tone-{found["tone"]}">{html.escape(found["verdict"])}</p>{why}{ceiling}'
+        f'<p class="cost-verdict tone-{found["tone"]}">{html.escape(found["verdict"])}</p>{why}{ceiling}{market}'
         '<table><thead><tr><th scope="col">All in</th><th scope="col">Best</th><th scope="col">Worst</th></tr></thead>'
         f'<tbody>{rows}</tbody><tfoot><tr><th scope="row">Total</th><td>{money(found["best"])}</td><td>{money(found["worst"])}</td></tr></tfoot></table>'
         f'{value}<ul class="cost-notes">{notes}</ul></section>'
@@ -719,9 +720,14 @@ def _desk_list(rows, filtered):
 
 def load_results():
     try:
-        return json.loads((STATIC_DIR / "results.json").read_text())
+        results = json.loads((STATIC_DIR / "results.json").read_text())
     except (OSError, json.JSONDecodeError):
-        return {"counties": []}
+        results = {"counties": []}
+    results["market"] = [
+        {"county": county or "All counties", "kind": kind.capitalize(), "sales": row[0], "median": row[1], "at_70": row[2][diligence.MARKET_STEPS.index(0.7)]}
+        for (county, kind), row in diligence.MARKET.items()
+    ]
+    return results
 
 
 def _percent(part, whole):
@@ -773,6 +779,14 @@ def render_results(summary):
             f'<figure><figcaption>What outside buyers paid, as a multiple of {base}. Typical sale.</figcaption>{"".join(_paid_row(county, e, top) for county, e in members)}</figure>'
             f'</div><details class="result-table"><summary>See the numbers</summary><table><thead><tr><th>County</th><th>Auctions</th><th>Did not sell</th><th>Kept</th><th>Outside buyer</th><th>Median paid</th></tr></thead><tbody>{rows}</tbody></table></details></section>'
         )
+    market = "".join(
+        f'<div class="result-row"><h4>{html.escape(row["county"])} · {html.escape(row["kind"].lower())} <span>{row["sales"]:,} buyers</span></h4>'
+        f'<div class="paid-line"><span class="paid-bar" style="width:{85 * row["median"]:.1f}%" title="Median {row["median"]:.0%} of the tax roll"></span><strong>{row["median"]:.0%}</strong></div>'
+        f'<p>About {row["at_70"]:.0%} paid 70% of the roll or less.</p></div>'
+        for row in summary.get("market", [])
+    )
+    if market:
+        sections.append(f'<section class="result-kind"><h2>Price against the tax roll</h2><figure class="result-market"><figcaption>What outside buyers paid, as a share of the tax roll. Typical sale. It covers sales with a roll on file. It shows what it took to win, not what a resale brought.</figcaption>{market}</figure></section>')
     body = "".join(sections) or '<p class="quiet">No past results yet.</p>'
     span = f'{summary["from"]} to {summary["through"]}. ' if summary.get("from") else ""
     return f"""<!DOCTYPE html>

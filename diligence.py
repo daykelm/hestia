@@ -31,6 +31,19 @@ COST_RECORDING = 500
 COST_QUIET_TITLE = (2500, 5000)
 COST_VALUE_SHARE = 0.7
 LOAN_GAP = 1.1
+# What outside buyers paid against the tax roll, 10/30/2025 to 10/30/2026: sales, the median share, and the part who paid at or under each share.
+# County rows need 100 sales. The rest use the pooled row. history.py pulls the sales, and this table was built from them and the state roll.
+MARKET_STEPS = (0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0)
+MARKET = {
+    ("Broward", "foreclosure"): (356, 0.58, (0.32, 0.42, 0.53, 0.65, 0.8, 0.92, 0.98)),
+    ("Lee", "foreclosure"): (175, 0.69, (0.14, 0.19, 0.3, 0.54, 0.79, 0.91, 0.97)),
+    ("Miami-Dade", "foreclosure"): (251, 0.88, (0.14, 0.17, 0.21, 0.26, 0.39, 0.55, 0.79)),
+    ("Palm Beach", "foreclosure"): (210, 0.7, (0.3, 0.35, 0.4, 0.5, 0.64, 0.79, 0.9)),
+    ("Lee", "tax deed"): (101, 0.75, (0.13, 0.22, 0.32, 0.42, 0.6, 0.79, 0.9)),
+    ("", "foreclosure"): (992, 0.7, (0.24, 0.3, 0.38, 0.5, 0.66, 0.8, 0.91)),
+    ("", "tax deed"): (140, 0.74, (0.15, 0.24, 0.34, 0.44, 0.63, 0.81, 0.91)),
+}
+LAND_HEAVY = 0.9
 BANDS = {
     "excellent": "Excellent",
     "good": "Good",
@@ -252,6 +265,34 @@ def _money_text(number):
     return f"${number:,.0f}"
 
 
+def market_row(county, kind):
+    kind = (kind or "").lower()
+    return MARKET.get((county, kind)) or MARKET.get(("", kind))
+
+
+def _share_at_or_under(row, share):
+    """Read the table at one share of the roll, in a straight line between its steps."""
+    steps = list(zip(MARKET_STEPS, row[2]))
+    if share <= steps[0][0]:
+        return steps[0][1] * max(share, 0) / steps[0][0]
+    for (low, low_part), (high, high_part) in zip(steps, steps[1:]):
+        if share <= high:
+            return low_part + (high_part - low_part) * (share - low) / (high - low)
+    return steps[-1][1]
+
+
+def _confirmed(row):
+    resale = next((item for item in row.get("factors") or [] if item.get("name") == "Resale value"), {})
+    return (resale.get("points") or 0) >= 2
+
+
+def _recent_sale(row):
+    """The sale that confirmed the roll. Older scores keep it only in the factor's note."""
+    resale = next((item for item in row.get("factors") or [] if item.get("name") == "Resale value"), {})
+    found = re.search(r"A \d{4} sale at \$([\d,]+)", resale.get("note") or "")
+    return float(found.group(1).replace(",", "")) if found and (resale.get("points") or 0) >= 2 else 0
+
+
 def _same_door(report):
     return report if (report or {}).get("match") in ("parcel", "address") else {}
 
@@ -318,16 +359,19 @@ def costs(price, meta, estimated_value=None, today=None):
     notes.append("Not counted: repairs, government liens that survive the sale, and any bidding past this price.")
     found = {"rows": rows, "best": best, "worst": worst, "notes": notes, "verdict": "", "tone": "unknown", "why": ""}
 
-    value = estimated_value or meta.get("roll_value")
+    roll = meta.get("roll_value")
+    sale = _recent_sale(row)
+    value = estimated_value or (min(roll, sale) if roll and sale else roll)
     limit = value * COST_VALUE_SHARE if value else 0
     # Stamps grow with the bid, so the ceiling is solved with them in it.
     fixed = worst - paid - paid * COST_STAMP_RATE
     ceiling = round((limit - fixed) / (1 + COST_STAMP_RATE))
     if value:
         found["value"] = value
-        found["value_label"] = "Your value" if estimated_value else "Tax roll value"
+        found["value_label"] = "Your value" if estimated_value else "Recent sale" if sale and sale < roll else "Tax roll value"
         resale = next((item for item in row.get("factors") or [] if item.get("name") == "Resale value"), {})
-        found["value_note"] = "" if estimated_value else "A recent sale agrees." if (resale.get("points") or 0) >= 2 else "No recent sale confirms it."
+        confirmed = (resale.get("points") or 0) >= 2
+        found["value_note"] = "" if estimated_value else "Lower than the tax roll." if found["value_label"] == "Recent sale" else "A recent sale agrees." if confirmed else "No recent sale confirms it."
     flags = row.get("flags") or []
     if not row.get("score"):
         found["verdict"] = "Not scored yet"
@@ -342,9 +386,21 @@ def costs(price, meta, estimated_value=None, today=None):
     elif worst > limit:
         found.update(verdict="Only if the title clears", tone="warn", why=f"The best case fits. The worst case is over {COST_VALUE_SHARE:.0%} of the value.")
     elif flags:
-        found.update(verdict="Numbers fit, danger open", tone="warn", why=flags[0], ceiling=ceiling)
+        found.update(verdict="Numbers fit, danger open", tone="warn", why=flags[0])
     else:
-        found.update(verdict="Worth a title check", tone="good", why=f"The worst case is under {COST_VALUE_SHARE:.0%} of the value.", ceiling=ceiling)
+        found.update(verdict="Worth a title check", tone="good", why=f"At this price, the worst case is under {COST_VALUE_SHARE:.0%} of the value.")
+    # A ceiling needs a value someone can stand behind. Past buyers show how often it would have won.
+    land_heavy = (row.get("land_share") or 0) >= LAND_HEAVY
+    if land_heavy:
+        notes.insert(0, "Almost all of the tax roll value is land. Check what stands there before trusting the value.")
+    if found["tone"] in ("good", "warn") and found["verdict"] != "Only if the title clears" and not land_heavy and (estimated_value or _confirmed(row)) and ceiling > 0:
+        found["ceiling"] = ceiling
+    market = market_row(meta.get("county"), kind)
+    if market and roll:
+        note = f"Outside buyers typically paid {market[1]:.0%} of the tax roll in sales like this, about {_money_text(round(roll * market[1], -3))} here ({market[0]} sales)."
+        if found.get("ceiling"):
+            note += f" About {_share_at_or_under(market, found['ceiling'] / roll):.0%} paid at or under this ceiling."
+        found["market_note"] = note
     return found
 
 
@@ -608,6 +664,8 @@ def score_facts(facts, today=None):
         diligence["point"] = [round(facts["point"][0], 6), round(facts["point"][1], 6)]
     if facts.get("house"):
         diligence["house"] = facts["house"]
+    if facts.get("land_share") is not None:
+        diligence["land_share"] = round(facts["land_share"], 3)
     if facts.get("loan"):
         diligence["loan"] = facts["loan"]
     if facts.get("tax"):
@@ -675,7 +733,7 @@ def _fdor(parcel):
     rows, payload = _query(
         FDOR,
         f"PARCEL_ID='{parcel}'",
-        "JV,JV_HMSTD,SALE_PRC1,SALE_YR1,PHY_ADDR1",
+        "JV,JV_HMSTD,SALE_PRC1,SALE_YR1,PHY_ADDR1,LND_VAL",
         returnGeometry="true",
         returnCentroid="true",
         outSR="4326",
@@ -814,6 +872,8 @@ def research(deal):
                 facts["values"].append(
                     {"source": "Florida DOR roll", "kind": "sale", "amount": row["SALE_PRC1"], "year": int(row["SALE_YR1"])}
                 )
+            if row.get("JV") and row.get("LND_VAL") is not None:
+                facts["land_share"] = row["LND_VAL"] / row["JV"]
             if row.get("PHY_ADDR1"):
                 facts["addresses"]["the state roll"] = row["PHY_ADDR1"]
             point = row.get("point")

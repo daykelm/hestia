@@ -35,6 +35,7 @@ export type Costs = {
   tone: "good" | "warn" | "stop" | "unknown";
   why: string;
   ceiling?: number;
+  market_note?: string;
   value?: number;
   value_label?: string;
   value_note?: string;
