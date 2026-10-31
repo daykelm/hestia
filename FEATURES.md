@@ -23,9 +23,9 @@ These cut steps out of the current desk. The seven steps stay. What goes is the 
 
 The desk currently asks for a score click, then shows every researched deal. Scoring already moves a deal from Found to Researched. Sale day, the color, and the roll-to-bid gap are enough to decide what to open.
 
-- Collect and score in one run, before the sale morning. No "Score this deal" on each row.
-- The first screen is the next sale only, good and fair first. Risky and not-enough-data stay one tap away.
-- A row is the address, the color, the bid, the roll, and how many times the roll covers the bid.
+- [ ] Collect and score in one run, before the sale morning. No "Score this deal" on each row.
+- [x] The first screen is the next sale only, grouped by verdict. Can't say and Pass stay one tap away.
+- [x] A row is the address, any danger, and the total cost from best to worst.
 
 Done when a sale morning starts on the deals worth opening, with nothing left to score.
 

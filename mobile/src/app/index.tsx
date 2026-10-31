@@ -1,42 +1,69 @@
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
-import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, SectionList, StyleSheet, Text, View } from "react-native";
 import { Help } from "../components/Help";
-import { ScoreDot } from "../components/ScoreDot";
-import { band, displayName, displayPlace, money, postForm, type Deal } from "../lib/api";
+import { displayName, displayPlace, postForm, type Deal } from "../lib/api";
 import { useStore } from "../lib/store";
-import { bandColor, color, serif } from "../lib/theme";
+import { color, serif } from "../lib/theme";
 
-const RANK: Record<string, number> = { excellent: 0, good: 1, fair: 2, thin: 3, risky: 4, "": 5 };
-const BAND_ORDER = ["excellent", "good", "fair", "risky", "thin"] as const;
+// Same order as the server. The first three start open, because those are the deals to act on.
+const VERDICTS: [string, boolean][] = [
+  ["Worth a title check", true],
+  ["Numbers fit, danger open", true],
+  ["Only if the title clears", true],
+  ["Can't say yet", false],
+  ["Not scored yet", false],
+  ["Pass at this price", false],
+  ["No price on the list", false],
+];
+
+const verdictOf = (d: Deal) => d.costs?.verdict || "No price on the list";
+const compact = (n: number) => (n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `$${Math.round(n / 1e3)}K` : `$${Math.round(n)}`);
+
+function saleDay(d: Deal) {
+  const [month, day, year] = (d.metadata.sale_date || "").split("/").map(Number);
+  return year ? new Date(year, month - 1, day).getTime() : 0;
+}
+
+function today() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+}
+
+function groups(rows: Deal[], prefix: string) {
+  const room = (d: Deal) => (d.costs?.value ? (d.costs.worst || 0) / d.costs.value : 99);
+  return VERDICTS.map(([title, startOpen]) => ({
+    key: `${prefix}${title}`,
+    title,
+    startOpen,
+    rows: rows.filter((d) => verdictOf(d) === title).sort((a, b) => room(a) - room(b)),
+  })).filter((group) => group.rows.length);
+}
 
 export default function Desk() {
   const { deals, guide, loading, error, refresh } = useStore();
   const [step, setStep] = useState<string>("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [more, setMore] = useState(false);
+  const [toggled, setToggled] = useState<Record<string, boolean>>({});
   const steps = guide?.steps || [];
 
-  const lane = useMemo(() => {
-    const wanted = step ? [step] : ["Found", "Researched"];
-    const ratio = (d: Deal) => (d.metadata.roll_value || 0) / (d.price || 1);
-    return deals
-      .filter((d) => wanted.includes(d.status))
-      .sort(
-        (a, b) =>
-          RANK[band(a)] - RANK[band(b)] ||
-          (b.metadata.diligence?.score || 0) - (a.metadata.diligence?.score || 0) ||
-          ratio(b) - ratio(a),
-      );
-  }, [deals, step]);
+  const lane = useMemo(() => deals.filter((d) => (step ? [step] : ["Found", "Researched"]).includes(d.status)), [deals, step]);
+
+  const { title, sections } = useMemo(() => {
+    const upcoming = lane.map(saleDay).filter((day) => day >= today());
+    if (step || !upcoming.length) return { title: step || "From the auctions", sections: groups(lane, "") };
+    const next = Math.min(...upcoming);
+    const now = groups(lane.filter((d) => saleDay(d) === next), "");
+    const rest = groups(lane.filter((d) => saleDay(d) !== next), "other:");
+    const label = new Date(next).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+    return { title: `Next sale · ${label}`, sections: [...now, ...rest] };
+  }, [lane, step]);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
-    for (const d of deals) {
-      c[d.status] = (c[d.status] || 0) + 1;
-      const b = band(d);
-      if (b) c[`band:${b}`] = (c[`band:${b}`] || 0) + 1;
-    }
+    for (const d of deals) c[d.status] = (c[d.status] || 0) + 1;
     return c;
   }, [deals]);
 
@@ -81,6 +108,11 @@ export default function Desk() {
           {deals.length} deals{stale ? ` · ${stale} to score` : ""}
         </Text>
       </View>
+      <Pressable onPress={() => setMore((open) => !open)} accessibilityRole="button" accessibilityState={{ expanded: more }} style={styles.moreToggle}>
+        <Text style={styles.moreText}>{more ? "Hide steps and collect" : "Steps and collect"}</Text>
+      </Pressable>
+      {more ? (
+        <>
       <View style={styles.actions}>
         <Pressable style={[styles.button, busy && styles.disabled]} disabled={busy} onPress={scoreAll} accessibilityRole="button">
           <Text style={styles.buttonText}>Score unchecked</Text>
@@ -89,7 +121,6 @@ export default function Desk() {
           <Text style={[styles.buttonText, styles.primaryText]}>Collect sales</Text>
         </Pressable>
       </View>
-      {note ? <Text style={styles.note}>{note}</Text> : null}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.process}>
         <Chip label="From the auctions" on={!step} onPress={() => setStep("")} count={(counts.Found || 0) + (counts.Researched || 0)} />
         {steps.map((name, n) => (
@@ -98,27 +129,38 @@ export default function Desk() {
         <Chip label="Passed" on={step === "Passed"} onPress={() => setStep("Passed")} count={counts.Passed || 0} />
         <Help topic="steps" />
       </ScrollView>
-      <View style={styles.bands}>
-        {BAND_ORDER.filter((b) => counts[`band:${b}`]).map((b) => (
-          <Text key={b} style={[styles.bandText, { color: bandColor[b] }]}>
-            {counts[`band:${b}`]} {(guide?.bands[b] || b).toLowerCase()}
-          </Text>
-        ))}
-        <Help topic="band" />
-      </View>
+        </>
+      ) : null}
+      {note ? <Text style={styles.note}>{note}</Text> : null}
+      <Text style={styles.title}>{title}</Text>
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
   );
 
+  const isOpen = (group: { key: string; startOpen: boolean }) => toggled[group.key] ?? (group.startOpen && !group.key.startsWith("other:"));
+
   return (
-    <FlatList
-      data={lane}
+    <SectionList
+      sections={sections.map((group) => ({ ...group, data: isOpen(group) ? group.rows : [] }))}
       keyExtractor={(d) => String(d.id)}
+      stickySectionHeadersEnabled={false}
       ListHeaderComponent={header}
       ListEmptyComponent={loading ? undefined : <Text style={styles.empty}>Nothing in this step.</Text>}
       refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} tintColor={color.dust} colors={[color.red]} progressBackgroundColor={color.plate} />}
       contentContainerStyle={styles.list}
-      renderItem={({ item }) => <Row deal={item} />}
+      renderSectionHeader={({ section }) => (
+        <Pressable
+          style={styles.group}
+          onPress={() => setToggled((open) => ({ ...open, [section.key]: !isOpen(section) }))}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: isOpen(section) }}
+        >
+          <Text style={styles.groupTitle}>{section.key.startsWith("other:") ? "Other sales: " : ""}{section.title}</Text>
+          <Text style={styles.groupCount}>{section.rows.length}</Text>
+          <Text style={styles.groupToggle}>{isOpen(section) ? "Hide" : "Show"}</Text>
+        </Pressable>
+      )}
+      renderItem={({ item, section }) => <Row deal={item} dated={section.key.startsWith("other:") || Boolean(step)} />}
     />
   );
 }
@@ -132,34 +174,26 @@ function Chip({ label, on, count, onPress }: { label: string; on: boolean; count
   );
 }
 
-function Row({ deal }: { deal: Deal }) {
-  const score = deal.metadata.diligence?.score || 0;
-  const b = band(deal);
-  const judgment = deal.metadata.price_basis === "final judgment";
-  const ratio = deal.metadata.roll_value && deal.price ? `${(deal.metadata.roll_value / deal.price).toFixed(1)}×` : "—";
+function Row({ deal, dated }: { deal: Deal; dated: boolean }) {
+  const danger = deal.card?.find((line) => line.label === "Danger")?.text;
+  const costs = deal.costs;
+  const range = !costs?.rows ? "—" : compact(costs.best!) === compact(costs.worst!) ? compact(costs.best!) : `${compact(costs.best!)}–${compact(costs.worst!)}`;
+  const where = [displayPlace(deal.location), dated ? deal.metadata.sale_date : ""].filter(Boolean).join(" · ");
   return (
     <Pressable
       style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
       onPress={() => router.push(`/deal/${deal.id}`)}
       accessibilityRole="button"
-      accessibilityLabel={`${displayName(deal.address)}, ${b ? b : "unscored"}, score ${score || "none"}`}
+      accessibilityLabel={`${displayName(deal.address)}, ${verdictOf(deal)}, all in ${range}`}
     >
-      <View style={styles.scoreCell}>
-        <ScoreDot score={score} band={b} />
-        <Text style={[styles.score, { color: bandColor[b] }]}>{score || "—"}</Text>
-      </View>
       <View style={styles.prop}>
         <Text style={styles.name} numberOfLines={1}>
           {displayName(deal.address)}
         </Text>
-        <Text style={styles.where} numberOfLines={1}>
-          {displayPlace(deal.location)} · {deal.metadata.sale_date || "no sale day"}
-        </Text>
+        <Text style={styles.where} numberOfLines={1}>{where}</Text>
+        {danger && danger !== "None on record" ? <Text style={styles.danger} numberOfLines={2}>{danger}</Text> : null}
       </View>
-      <View style={styles.money}>
-        <Text style={styles.bid}>{money(deal.price)}</Text>
-        <Text style={styles.ratio}>{judgment ? "judgment · " : ""}{ratio}</Text>
-      </View>
+      <Text style={styles.bid}>{range}</Text>
     </Pressable>
   );
 }
@@ -182,18 +216,20 @@ const styles = StyleSheet.create({
   chipText: { color: color.quiet, fontSize: 13 },
   chipTextOn: { color: color.dust },
   chipCount: { color: color.dust, fontSize: 13, fontVariant: ["tabular-nums"] },
-  bands: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 8 },
-  bandText: { fontSize: 13, fontVariant: ["tabular-nums"] },
+  moreToggle: { minHeight: 44, justifyContent: "center", paddingHorizontal: 16 },
+  moreText: { color: color.quiet, fontSize: 14, textDecorationLine: "underline" },
+  title: { color: color.dust, fontFamily: serif, fontSize: 24, paddingHorizontal: 16, paddingTop: 12 },
+  group: { flexDirection: "row", alignItems: "baseline", gap: 8, minHeight: 44, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
+  groupTitle: { color: color.dust, fontFamily: serif, fontSize: 18, flexShrink: 1 },
+  groupCount: { color: color.quiet, fontSize: 14, fontVariant: ["tabular-nums"] },
+  groupToggle: { color: color.quiet, fontSize: 13, marginLeft: "auto" },
+  danger: { color: color.amber, fontSize: 13, marginTop: 2 },
   error: { color: color.red, paddingHorizontal: 16, paddingVertical: 8 },
   empty: { color: color.quiet, padding: 16 },
   row: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: color.indigo },
   rowPressed: { backgroundColor: color.indigo },
-  scoreCell: { width: 48, flexDirection: "row", alignItems: "center", gap: 6 },
-  score: { fontSize: 15, fontVariant: ["tabular-nums"] },
   prop: { flex: 1, minWidth: 0 },
   name: { color: color.dust, fontSize: 16, fontWeight: "500" },
   where: { color: color.quiet, fontSize: 13, marginTop: 2 },
-  money: { alignItems: "flex-end" },
   bid: { color: color.dust, fontSize: 15, fontVariant: ["tabular-nums"] },
-  ratio: { color: color.quiet, fontSize: 12, marginTop: 2, fontVariant: ["tabular-nums"] },
 });

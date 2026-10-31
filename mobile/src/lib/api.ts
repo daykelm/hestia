@@ -52,7 +52,7 @@ export type Deal = {
   link: string;
   status: string;
   card?: { label: string; text: string }[];
-  costs?: Costs | Record<string, never>;
+  costs?: Partial<Costs>;
   street?: { name: string; url: string }[];
   metadata: {
     county?: string;

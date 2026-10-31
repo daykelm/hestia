@@ -37,6 +37,7 @@ let place = null;
 function draw() {
   const width = sky.clientWidth;
   const height = sky.clientHeight;
+  if (!width) return;
   scale = Math.min(1, Math.max(0.55, width / 900));
   const steps = width < 560 ? [1] : [1, 3];
   sky.setAttribute("viewBox", `0 0 ${width} ${height}`);
@@ -236,7 +237,7 @@ const appVersion = parseInt((navigator.userAgent.match(/HestiaApp\/(\d+)/) || []
 if (inApp && latestApp > appVersion) {
   const banner = document.getElementById("app-update");
   if (!appVersion) {
-    banner.textContent = "A new version of the Hestia app is ready. This copy cannot update itself: open hestia.trading/static/hestia.apk in Chrome once to install it.";
+    banner.textContent = "This is the old Hestia app. Open hestia.trading/static/hestia-native.apk in Chrome to install the current one, then uninstall this copy.";
   }
   banner.hidden = false;
 }

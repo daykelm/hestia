@@ -258,6 +258,20 @@ table.index { width: 100%; border-collapse: collapse; }
 .index tr.day .c { margin-left: 0.35rem; color: var(--quiet); font-weight: 400; }
 .index td.prop { display: flex; align-items: center; gap: 0.65rem; }
 .index .id { min-width: 0; }
+.group, .later { margin-top: 0.85rem; }
+.group summary, .later > summary {
+  display: flex; align-items: baseline; gap: 0.5rem; min-height: 44px; padding-block: 0.6rem;
+  cursor: pointer; list-style: none; font-family: var(--serif); font-size: 1.125rem; color: var(--dust);
+}
+.group summary::-webkit-details-marker, .later > summary::-webkit-details-marker { display: none; }
+.group .c, .later .c { color: var(--quiet); font-family: var(--sans); font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+.group summary::after, .later > summary::after { content: "Show"; margin-left: auto; color: var(--quiet); font-family: var(--sans); font-size: 0.8125rem; }
+.group[open] > summary::after, .later[open] > summary::after { content: "Hide"; }
+.later > summary { border-top: 1px solid var(--chart); margin-top: 1rem; }
+.index td.cost { white-space: nowrap; font-size: 1rem; }
+.tools .process { padding: 0.75rem 0 0; }
+.tools .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+.tools .chart { margin-top: 0.75rem; }
 .index .thumb { width: 64px; height: 44px; flex: none; object-fit: cover; border-radius: 3px; background: var(--indigo); display: block; }
 .index tbody tr { cursor: pointer; transition: background-color 140ms var(--out); }
 .index tbody tr[aria-current="true"] { background: var(--plate); }
@@ -291,8 +305,6 @@ span.band-good { color: var(--good); }
 span.band-fair { color: var(--fair); }
 span.band-risky { color: var(--risky); }
 span.band-thin { color: var(--thin); }
-.bands { margin: 0; padding: 0.5rem clamp(1rem, 3vw, 2rem) 0; font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
-.bands span + span::before { content: " · "; color: var(--fog); }
 
 /* Process strip */
 .process { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem clamp(1rem, 3vw, 2rem) 0; overflow-x: auto; scrollbar-width: none; }
@@ -458,7 +470,6 @@ html:not(.js) .plate:target, html:not(.js) .plates:not(:has(.plate:target)) .pla
 .pipeline li a { font-weight: 500; }
 
 @media (max-width: 1100px) {
-  .index .ratio { display: none; }
 }
 
 @media (max-width: 860px) {
@@ -470,7 +481,6 @@ html:not(.js) .plate:target, html:not(.js) .plates:not(:has(.plate:target)) .pla
   .desk { grid-template-columns: minmax(0, 1fr); gap: 0; }
   .sky-box { height: 300px; }
   .side { position: static; max-height: none; overflow: visible; }
-  .index .roll, .index .sale { display: none; }
   .js .plates {
     position: fixed;
     inset: auto 0 0 0;

@@ -1,6 +1,6 @@
 import tempfile
 import unittest
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 import app
@@ -116,10 +116,10 @@ class DealTests(unittest.TestCase):
         self.assertNotIn("javascript:alert", page)
         for key in app.HELP:
             self.assertIn(f'id="help-{key}"', page)
-        self.assertIn('popovertarget="help-roll"', page)
         self.assertIn(f'data-app-version="{app.app_version()}"', page)
         self.assertIn('id="app-update" hidden', page)
         self.assertIn('class="process"', page)
+        self.assertLess(page.index('id="sky"'), page.index('class="lane"'))
         self.assertIn("Step 1 of 7", page)
         today = date.today().strftime("%m/%d/%Y")
         grouped = app.render_page(
@@ -142,6 +142,9 @@ class DealTests(unittest.TestCase):
         )
         self.assertIn("Today", grouped)
         self.assertIn('class="thumb"', grouped)
+        self.assertIn('popovertarget="help-roll"', grouped)
+        self.assertIn("Next sale", grouped)
+        self.assertIn("$21K", grouped)
         self.assertIn('class="costs"', grouped)
         self.assertIn("Zillow", grouped)
         self.assertIn("google.com/maps/search", grouped)
@@ -411,6 +414,27 @@ class DealTests(unittest.TestCase):
         self.assertEqual(unscored["verdict"], "Not scored yet")
         no_report = diligence.costs(1000, {"kind": "Foreclosure", "roll_value": 9000, "diligence": {"score": 6, "band": "good"}})
         self.assertEqual(no_report["verdict"], "Can't say yet")
+
+    def test_desk_opens_on_the_next_sale_grouped_by_verdict(self):
+        def deal(did, day, roll):
+            return {
+                "id": did, "address": f"{did} Oak", "location": "", "price": 1000, "estimated_value": None, "spread": None,
+                "source": "", "notes": "", "link": "", "status": "Researched",
+                "metadata": {"kind": "Tax deed", "sale_date": day.strftime("%m/%d/%Y"), "roll_value": roll, "diligence": {"score": 7, "band": "good"}},
+            }
+
+        soon, far = date.today() + timedelta(days=1), date.today() + timedelta(days=9)
+        rows = [deal(1, soon, 1000), deal(2, soon, 400000), deal(3, far, 400000)]
+        title, body, count = app._desk_list(rows, False)
+        self.assertIn("Next sale", title)
+        self.assertEqual(count, 2)
+        self.assertLess(body.index("Worth a title check"), body.index("Pass at this price"))
+        self.assertLess(body.index('data-id="2"'), body.index('class="later"'))
+        self.assertLess(body.index('class="later"'), body.index('data-id="3"'))
+        self.assertIn('<details class="group"><summary>Pass at this price', body)
+        title, body, count = app._desk_list(rows, True)
+        self.assertEqual((title, count), ("", 3))
+        self.assertNotIn('class="later"', body)
 
 
 if __name__ == "__main__":

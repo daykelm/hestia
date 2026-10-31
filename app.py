@@ -227,17 +227,6 @@ def _band(deal):
 BAND_LABEL = diligence.BANDS
 
 
-def _ratio(deal):
-    roll, price = _meta(deal).get("roll_value"), deal.get("price")
-    if not roll or not price:
-        return "—"
-    return f"{roll / price:.1f}×"
-
-
-def _bid_label(deal):
-    return "Final judgment" if _meta(deal).get("price_basis") == "final judgment" else "Opening bid"
-
-
 def _mag(score, band=""):
     size = 3 + score * 1.6 if score else 4
     kind = f" band-{band}" if score and band else " empty"
@@ -439,7 +428,8 @@ def _costs(deal):
     ceiling = f'<p class="cost-ceiling">Highest bid that fits: {money(found["ceiling"])}</p>' if found.get("ceiling") else ""
     value = ""
     if found.get("value"):
-        value = f'<p class="cost-value">{html.escape(found["value_label"])} {money(found["value"])}. {html.escape(found["value_note"])}</p>'
+        help_key = "your_value" if found["value_label"] == "Your value" else "roll"
+        value = f'<p class="cost-value">{html.escape(found["value_label"])}{help_button(help_key)} {money(found["value"])}. {html.escape(found["value_note"])}</p>'
     why = f'<p class="cost-why">{html.escape(found["why"])}</p>' if found["why"] else ""
     notes = "".join(f"<li>{html.escape(note)}</li>" for note in found["notes"])
     return (
@@ -595,87 +585,95 @@ def _thumb(deal):
     )
 
 
-def _index_row(deal):
+# The order a sale morning reads in. The first three start open, because those are the deals to act on.
+VERDICT_GROUPS = (
+    ("Worth a title check", True),
+    ("Numbers fit, danger open", True),
+    ("Only if the title clears", True),
+    ("Can't say yet", False),
+    ("Not scored yet", False),
+    ("Pass at this price", False),
+    ("No price on the list", False),
+)
+
+
+def _verdict(deal):
+    return deal_costs(deal).get("verdict") or "No price on the list"
+
+
+def _short(number):
+    if number >= 1_000_000:
+        return f"${number / 1_000_000:.1f}M"
+    return f"${number / 1000:.0f}K" if number >= 1000 else f"${number:.0f}"
+
+
+def _cost_range(deal):
+    found = deal_costs(deal)
+    if not found:
+        return "—"
+    best, worst = _short(found["best"]), _short(found["worst"])
+    return best if best == worst else f"{best}–{worst}"
+
+
+def _index_row(deal, dated):
     did = int(deal["id"])
-    meta = _meta(deal)
-    score = _score(deal)
-    band = _band(deal)
-    basis = '<small>judgment</small>' if meta.get("price_basis") == "final judgment" else ""
-    label = BAND_LABEL.get(band, "Unscored")
     return (
         f'<tr data-id="{did}">'
-        f'<td class="num score" title="{html.escape(label, quote=True)}">{_mag(score, band)}<span class="band-{band}">{score or "—"}</span>'
-        f'<span class="sr">{html.escape(label)}</span></td>'
         f'<td class="prop">{_thumb(deal)}<span class="id">'
         f'<a href="#d{did}">{html.escape(display_name(deal["address"]))}</a>'
-        f'<span class="where">{html.escape(_row_hint(deal))}</span>'
+        f'<span class="where">{html.escape(_row_hint(deal, dated))}</span>'
         f"</span></td>"
-        f'<td class="num sale">{html.escape(meta.get("sale_date") or "—")}</td>'
-        f'<td class="num">{money(deal.get("price"))}{basis}</td>'
-        f'<td class="num roll">{money(meta.get("roll_value"))}</td>'
-        f'<td class="num ratio">{_ratio(deal)}</td>'
+        f'<td class="num cost">{html.escape(_cost_range(deal))}</td>'
         "</tr>"
     )
 
 
-def _row_hint(deal):
+def _row_hint(deal, dated):
     place = display_place(deal.get("location"))
-    card = {line["label"]: line["text"] for line in card_lines(deal)}
-    hint = deal_costs(deal).get("verdict", "") if card["Danger"] == "None on record" else card["Danger"]
-    if hint == "Not scored yet":
-        hint = ""
-    return " · ".join(part for part in (place, hint) if part)
+    day = _meta(deal).get("sale_date") if dated else ""
+    danger = next(line["text"] for line in card_lines(deal) if line["label"] == "Danger")
+    return " · ".join(part for part in (place, day, "" if danger == "None on record" else danger) if part)
 
 
-def _sale_group(deal, today):
-    day = _sale_day(deal)
-    if day is None:
-        return "none"
-    if day < today:
-        return "earlier"
-    return day
+def _verdict_groups(rows, dated=False):
+    """Inside a verdict, the deal with the most room under its value comes first."""
+
+    def room(deal):
+        found = deal_costs(deal)
+        return found["worst"] / found["value"] if found.get("value") else 99
+
+    parts = []
+    for verdict, start_open in VERDICT_GROUPS:
+        members = sorted((deal for deal in rows if _verdict(deal) == verdict), key=room)
+        if not members:
+            continue
+        body = "".join(_index_row(deal, dated) for deal in members)
+        parts.append(
+            f'<details class="group"{" open" if start_open else ""}>'
+            f'<summary>{html.escape(verdict)} <span class="c">{len(members)}</span></summary>'
+            '<table class="index"><thead class="sr"><tr><th>Property</th><th>All in, best to worst</th></tr></thead>'
+            f"<tbody>{body}</tbody></table></details>"
+        )
+    return "".join(parts)
 
 
-def _index_table(rows):
-    """Upcoming sale days first. Inside a day, the stronger scores come first."""
+def _desk_list(rows, filtered):
+    """The next sale first. A filter already narrowed the list, so it shows everything it matched."""
     today = _today()
-    rank = {band: n for n, band in enumerate(("excellent", "good", "fair", "thin", "risky", ""))}
-
-    def key(deal):
-        day = _sale_day(deal)
-        if day is None:
-            when = (2, 0)
-        elif day < today:
-            when = (1, -day.toordinal())
-        else:
-            when = (0, day.toordinal())
-        roll = _meta(deal).get("roll_value") or 0
-        ratio = roll / deal["price"] if deal.get("price") else 0
-        return (when, rank.get(_band(deal), 9), -_score(deal), -ratio)
-
-    ordered = sorted(rows, key=key)
-    body = []
-    current = None
-    for deal in ordered:
-        group = _sale_group(deal, today)
-        if group != current:
-            current = group
-            count = sum(1 for other in ordered if _sale_group(other, today) == group)
-            if group == "earlier":
-                title = "Earlier sales"
-            elif group == "none":
-                title = "No sale day"
-            else:
-                title = _day_heading(group, today)
-            body.append(f'<tr class="day"><th colspan="6">{html.escape(title)} <span class="c">{count}</span></th></tr>')
-        body.append(_index_row(deal))
-    return (
-        '<table class="index"><thead><tr>'
-        f'<th class="num">Score{help_button("score")}</th><th>Property</th><th class="num sale">Sale day{help_button("sale")}</th>'
-        f'<th class="num">Bid{help_button("bid_column")}</th><th class="num roll">Tax roll{help_button("roll")}</th>'
-        f'<th class="num ratio">Roll ÷ bid{help_button("ratio")}</th>'
-        "</tr></thead><tbody>" + "".join(body) + "</tbody></table>"
-    )
+    days = [_sale_day(deal) for deal in rows]
+    upcoming = [day for day in days if day and day >= today]
+    if filtered or not upcoming:
+        return "", _verdict_groups(rows, dated=True), len(rows)
+    next_day = min(upcoming)
+    now = [deal for deal in rows if _sale_day(deal) == next_day]
+    rest = [deal for deal in rows if _sale_day(deal) != next_day]
+    later = ""
+    if rest:
+        later = (
+            f'<details class="later"><summary>Other sales <span class="c">{len(rest)}</span></summary>'
+            f"{_verdict_groups(rest, dated=True)}</details>"
+        )
+    return f"Next sale · {_day_heading(next_day, today)}", _verdict_groups(now) + later, len(now)
 
 
 def _pipeline(rows):
@@ -708,19 +706,6 @@ def _process(rows, current):
             f'<span class="step-name">{html.escape(step)}</span><span class="c">{count}</span></a></li>'
         )
     return f'<nav class="process" aria-label="Process"><ol>{"".join(items)}</ol>{help_button("steps")}</nav>'
-
-
-def _band_counts(rows):
-    counts = {}
-    for deal in rows:
-        band = _band(deal)
-        if band:
-            counts[band] = counts.get(band, 0) + 1
-    return " · ".join(
-        f'<span class="band-{band}">{counts[band]} {html.escape(BAND_LABEL[band].lower())}</span>'
-        for band in BAND_LABEL
-        if counts.get(band)
-    )
 
 
 def _next_sale(rows):
@@ -761,9 +746,11 @@ def render_page(rows, filters, error="", draft=None, everything=None):
 
     lane = (filter_status,) if filter_status else ("Found", "Researched")
     index_rows = [deal for deal in rows if deal["status"] in lane]
-    index_title = "From the auctions" if not filter_status else filter_status
+    index_title = filter_status or "From the auctions"
+    index_count = len(index_rows)
     if index_rows:
-        index = _index_table(index_rows)
+        next_title, index, index_count = _desk_list(index_rows, any(filters.values()))
+        index_title = next_title or index_title
     elif any(filters.values()):
         index = '<p class="empty">No deals match these filters. <a href="/">Show all</a></p>'
     else:
@@ -779,7 +766,6 @@ def render_page(rows, filters, error="", draft=None, everything=None):
     if next_sale:
         counts.append(f"next sale {next_sale}")
     in_pipeline = sum(1 for deal in everything if deal["status"] in PIPELINE)
-    bands = _band_counts(everything)
     show_all = '<a href="/">Show all</a>' if any(filters.values()) else ""
     filters_open = " open" if any(filters.get(key) for key in ("location", "source", "min_price", "max_price")) else ""
     add_open = " open" if draft else ""
@@ -799,15 +785,9 @@ def render_page(rows, filters, error="", draft=None, everything=None):
 <header class="bar">
   <h1 class="mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.5 13.6 10.4 22.5 12 13.6 13.6 12 22.5 10.4 13.6 1.5 12 10.4 10.4Z"/></svg>Hestia</h1>
   <p class="counts" id="count">{html.escape(" · ".join(counts))} · <a href="#pipe-title">{in_pipeline} in pipeline</a></p>
-  <div class="actions">
-    <button type="button" id="score">Score unchecked</button>
-    <button type="button" id="collect" class="primary">Collect<span class="long"> South Florida</span> sales</button>
-  </div>
   <p class="note" id="collect-note" role="status"></p>
 </header>
-{_process(everything, filter_status)}
-{f'<p class="bands">{bands}{help_button("band")}</p>' if bands else ""}
-<p class="app-update" id="app-update" hidden>A new version of the Hestia app is ready. <a href="/static/hestia.apk">Install update</a></p>
+<p class="app-update" id="app-update" hidden>This is the old Hestia app. <a href="/static/hestia-native.apk">Install the current one</a>, then uninstall this copy.</p>
 {error_html}
 <div class="tools">
   <details{filters_open}>
@@ -821,8 +801,27 @@ def render_page(rows, filters, error="", draft=None, everything=None):
       <button type="submit">Filter</button>
     </form>
   </details>
+  <details>
+    <summary>Chart</summary>
+    <section class="chart" aria-labelledby="chart-title">
+      <h2 id="chart-title" class="sr">Bid against tax roll value</h2>
+      <div class="sky-box"><svg id="sky" role="img" aria-label="Each deal is a dot. Further right costs more, higher has a larger tax roll value, bigger scored higher, and the color is the score color."></svg></div>
+      <p class="off-chart quiet" id="off-chart"></p>
+    </section>
+  </details>
+  <details>
+    <summary>Steps</summary>
+    {_process(everything, filter_status)}
+  </details>
+  <details>
+    <summary>Collect</summary>
+    <div class="actions">
+      <button type="button" id="score">Score unchecked</button>
+      <button type="button" id="collect" class="primary">Collect<span class="long"> South Florida</span> sales</button>
+    </div>
+  </details>
   <details{add_open}>
-    <summary>Add a deal by hand</summary>
+    <summary>Add a deal</summary>
     <form class="add" method="post" action="/deals">
       {field("add", "address", "Address", draft.get("address", ""))}
       {field("add", "location", "Location", draft.get("location", ""))}
@@ -840,13 +839,8 @@ def render_page(rows, filters, error="", draft=None, everything=None):
 </div>
 <main class="desk">
   <div class="field">
-    <section class="chart" aria-labelledby="chart-title">
-      <h2 id="chart-title" class="sr">Bid against tax roll value</h2>
-      <div class="sky-box"><svg id="sky" role="img" aria-label="Each deal is a dot. Further right costs more, higher has a larger tax roll value, bigger scored higher, and the color is the score color."></svg></div>
-      <p class="off-chart quiet" id="off-chart"></p>
-    </section>
     <section class="lane" aria-labelledby="index-title">
-      <h2 id="index-title">{html.escape(index_title)} <span>{len(index_rows)}</span></h2>
+      <h2 id="index-title">{html.escape(index_title)} <span>{index_count}</span></h2>
       {index}
     </section>
   </div>
