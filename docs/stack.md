@@ -16,7 +16,7 @@ The Android app and the web desk both talk to one Python server. Cloudflare Acce
 | Host | Docker Compose project `hestia` on the Umbrel. Image `python:3.12-slim`. |
 | Edge | `cloudflare/cloudflared`, Compose profile `tunnel`, HTTP/2. Cloudflare Access on the hostname. |
 | Phone | Expo SDK 58, React Native 0.88, Expo Router. Package `com.hestia.trading`. |
-| Phone updates | EAS Update on the `production` channel. The installed APK is arm64. A native rebuild is only for a native module change. |
+| Phone updates | EAS Update on the `production` channel. Close the app and open it again to take one. The installed APK is [hestia-native.apk](https://hestia.trading/static/hestia-native.apk), arm64. A new APK is only for a native module change. |
 | Tests | `python3 -m unittest test_deals` |
 | Ship | `./deploy.sh` tests, syncs the app files, rebuilds the hestia container, and publishes an over-the-air update when `mobile/` changed. |
 
@@ -48,7 +48,7 @@ The score uses only factors a source actually answered. Each checked factor can 
 | Risky | Any flag, or a score of 3 or less. |
 | Not enough data | The house number disagrees across sources, resale has fewer than two sources, or fewer than four factors were checked. |
 
-On the sky map the bands are blue, green, yellow, red, and a hollow dot. Amber on the card marks danger, a tax line that starts with Delinquent, or a cause that is an HOA lien or more than one thing. A tax deed is not red just because the taxes are delinquent. That is why it is in the sale. An HOA case in county court is red. Delinquent taxes on a foreclosure, or a second loan on a foreclosure, are red.
+On the sky map the bands are blue, green, yellow, red, and a hollow dot. Amber on the card marks danger, a tax line that starts with Delinquent, or a cause that is an HOA lien or more than one thing. It also marks an Also line that disagrees with ATTOM, names a unit the sale list did not, or is a different door. A tax deed is not red just because the taxes are delinquent. That is why it is in the sale. An HOA case in county court is red. Delinquent taxes on a foreclosure, or a second loan on a foreclosure, are red.
 
 The cause is read from the auction type, the court in the case number, and the ATTOM tax line.
 
@@ -63,7 +63,20 @@ The cause is read from the auction type, the court in the case number, and the A
 
 County-court case numbers are the ones Hestia can see as COCE, CONO, COSO, COWE, or a county-court marker. Circuit numbers are CACE or a CA marker. An HOA suit filed in circuit court still reads as Mortgage until the docket is opened.
 
-The card, in order: Cause, Worth, Room, Danger, Still open, then Loan and Tax when ATTOM returned them. Worth is whether a sale since 2023 agrees with the roll. Room is how many times the roll covers the bid. Danger is the first flag, or "None on record." Still open is whatever no source answered, plus the court docket until it is checked, plus other liens until that search is done. The seven factors stay behind the card: resale value, comparables, title, code and building, flood, occupancy, and other liens.
+The card, in order: Cause, Worth, Room, Danger, Still open, then Loan and Tax when ATTOM returned them, then Also when a RealEstateAPI report is stored. Worth is whether a sale since 2023 agrees with the roll. Room is how many times the roll covers the bid. Danger is the first flag, or "None on record." Still open is whatever no source answered, plus the court docket until it is checked, plus other liens until that search is done. The seven factors stay behind the card: resale value, comparables, title, code and building, flood, occupancy, and other liens.
+
+Also is the second loan-and-tax report. It does not change the band. "Disagrees" means one side says a loan is open and the other does not, or one side says the tax is delinquent and the other does not. Two different dollar amounts can still sit on a line that does not say Disagrees. "Parcel record is …" means the county parcel id came back as a unit the auction list did not name. "Not this door" means the report is a different address. "No record for this address" means the lookup missed.
+
+On the 98 sales that were on the desk when this was pulled:
+
+| Also line | Deals |
+| --- | --- |
+| Same door, and the same yes or no on an open loan and on delinquency | 40 |
+| Disagrees on an open loan or on delinquency | 45 |
+| Parcel record is a unit the sale list did not name | 20 |
+| No record (12513 Stone Valley Loop) | 1 |
+
+Eight of those 20 unit records are also in the 45 disagreements, so the rows overlap. The pull used the county parcel id after street matches kept returning a unit. About 160 lookups, about $16 of the $200 credit. The balance left at the vendor was not read back. A rescore keeps the stored report and does not buy it again.
 
 ## Providers in the score
 

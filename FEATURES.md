@@ -25,7 +25,7 @@ Each deal already pulls the auction list, both tax rolls, nearby sales, code cas
 - Danger: one line, or "none in the public records." An HOA case, an open code lien, a coastal flood zone, or a bid above the roll.
 - Still open: only the checks no source answered. Usually the docket, recorded liens, and taxes past the opening bid.
 
-The factor list stays behind the card. When an ATTOM key is on the Umbrel, the open-loan amount and the delinquent tax replace two of those "still open" lines. The court docket stays a manual check.
+The factor list stays behind the card. When an ATTOM key is on the Umbrel, the open-loan amount and the delinquent tax replace two of those "still open" lines. RealEstateAPI is a second Also line on that card and does not change the color. The court docket stays a manual check.
 
 Done when a deal can be judged from the card without opening the factor list.
 

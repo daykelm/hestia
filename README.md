@@ -14,7 +14,7 @@ How the pieces fit, which providers are in the score, and which plans were not b
 
 1. Pull upcoming tax-deed and foreclosure lists for Broward, Miami-Dade, and Lee.
 2. Score each parcel from the county roll, nearby sales, code cases, flood, and an ATTOM loan and tax report.
-3. Show a card: cause, worth, room, danger, what is still open, the loan, and the tax bill.
+3. Show a card: cause, worth, room, danger, what is still open, the loan, the tax bill, and an Also line from RealEstateAPI. The score stays on ATTOM.
 4. Track the few deals that are pursued, from title check through a buyer.
 
 Collier tax deeds are in person and are not collected. The court docket is still a manual check. Listing sites are links, not data feeds.

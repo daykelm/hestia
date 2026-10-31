@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="960" height="560" viewBox="0 0 960 560" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="588" viewBox="0 0 960 588" role="img" aria-labelledby="title desc">
   <title id="title">How a deal gets a card</title>
-  <desc id="desc">An auction listing is checked against public records and ATTOM, scored on the factors that answered, and shown as a short card.</desc>
-  <rect width="960" height="560" fill="#f6f1e8"/>
+  <desc id="desc">An auction listing is checked against public records and ATTOM, scored on the factors that answered, and shown as a short card. RealEstateAPI is an extra line and is not scored.</desc>
+  <rect width="960" height="588" fill="#f6f1e8"/>
   <text x="40" y="44" fill="#111a30" font-family="Georgia, serif" font-size="26">How a deal gets a card</text>
   <text x="40" y="70" fill="#5c6b82" font-family="Avenir Next, Helvetica, sans-serif" font-size="14">Only a source that answered is counted. A flag turns the band red.</text>
 
@@ -49,7 +49,7 @@
     <path d="M806 246 V268" stroke="#3a4a63" stroke-width="1.5"/>
     <polygon points="806,276 800,264 812,264" fill="#3a4a63"/>
 
-    <rect x="692" y="284" width="228" height="252" rx="8" fill="#16233d"/>
+    <rect x="692" y="284" width="228" height="280" rx="8" fill="#16233d"/>
     <text x="708" y="314" fill="#ffb36b" font-size="13">4. Card</text>
     <g fill="#f2e2c9" font-size="14">
       <text x="708" y="344">Cause</text>
@@ -59,7 +59,8 @@
       <text x="708" y="440">Still open</text>
       <text x="708" y="464">Loan</text>
       <text x="708" y="488">Tax</text>
+      <text x="708" y="512">Also</text>
     </g>
-    <text x="708" y="516" fill="#a9b4c7" font-size="12">Seven checks stay behind it</text>
+    <text x="708" y="540" fill="#a9b4c7" font-size="12">Also is not in the score</text>
   </g>
 </svg>
