@@ -21,7 +21,7 @@ LEE = "https://gismapserver.leegov.com/gisserver910/rest/services/DataExplorer/P
 LEE_NUISANCE = "https://services2.arcgis.com/LvWGAAhHwbCJ2GMP/arcgis/rest/services/NuisanceAccumulationViolations/FeatureServer/0/query"
 FEMA = "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query"
 CENSUS = "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress"
-FIPS = {"Broward": "12011", "Miami-Dade": "12086", "Lee": "12071"}
+FIPS = {"Palm Beach": "12099", "Broward": "12011", "Miami-Dade": "12086", "Monroe": "12087", "Lee": "12071"}
 _UNIT = re.compile(r"(?:#|\b(?:APT|UNIT|STE|SUITE)\b)\s*[A-Z0-9-]+", re.I)
 
 RECENT_SALE_YEAR = 2023

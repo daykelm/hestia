@@ -12,12 +12,12 @@ How the pieces fit, which providers are in the score, and which plans were not b
 
 ## What it does
 
-1. Pull upcoming tax-deed and foreclosure lists for Broward, Miami-Dade, and Lee.
+1. Pull tax-deed and foreclosure lists for the next 45 days from Palm Beach, Broward, Miami-Dade, and Lee, and tax deeds from Monroe.
 2. Score each parcel from the county roll, nearby sales, code cases, flood, and an ATTOM loan and tax report.
 3. Show a card: cause, worth, room, danger, what is still open, the loan, the tax bill, and an Also line from RealEstateAPI. The score stays on ATTOM.
 4. Track the few deals that are pursued, from title check through a buyer.
 
-Collier tax deeds are in person and are not collected. The court docket is still a manual check. Listing sites are links, not data feeds.
+Collier is not on the RealAuction calendars and is not collected. Neither are Monroe foreclosures. The court docket is still a manual check. Listing sites are links, not data feeds.
 
 ## Run it
 
@@ -44,6 +44,7 @@ app.py            the desk and the JSON API
 deals.py          SQLite
 sources.py        RealAuction calendars
 diligence.py      research and the score
+history.py        past auction results and the county summary
 static/           the web desk
 mobile/           the Android app (Expo)
 android/          the WebView Android shell

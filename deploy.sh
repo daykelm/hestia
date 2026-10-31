@@ -21,7 +21,7 @@ else
 fi
 
 echo "3/5 upload"
-rsync -a -e "$SSH" app.py deals.py sources.py diligence.py Dockerfile docker-compose.yml .dockerignore "$UMBREL:hestia/"
+rsync -a -e "$SSH" app.py deals.py sources.py diligence.py history.py Dockerfile docker-compose.yml .dockerignore "$UMBREL:hestia/"
 rsync -a --delete -e "$SSH" static/ "$UMBREL:hestia/static/"
 
 echo "4/5 restart hestia"

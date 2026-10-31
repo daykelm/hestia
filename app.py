@@ -3,6 +3,7 @@
 import html
 import json
 import os
+import threading
 from contextlib import closing
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -158,7 +159,18 @@ STEP_GUIDE = {
     "Closed": "Done. The deal is closed.",
     "Passed": "You passed on this deal. Reopen it to pick it back up.",
 }
+REGIONS = ("Palm Beach", "Broward", "Miami-Dade", "Monroe", "Lee")
 CHECK_LINKS = {
+    "Palm Beach": (
+        ("Court docket", "https://appsgp.mypalmbeachclerk.com/eCaseView/"),
+        ("Recorded liens", "https://erec.mypalmbeachclerk.com/"),
+        ("Taxes owed", "https://pbctax.publicaccessnow.com/"),
+    ),
+    "Monroe": (
+        ("Court docket", "https://www.monroe-clerk.com/court-records/"),
+        ("Recorded liens", "https://www.monroe-clerk.com/"),
+        ("Taxes owed", "https://monroe.county-taxes.com/public"),
+    ),
     "Miami-Dade": (
         ("Court docket", "https://www2.miamidadeclerk.gov/ocs/"),
         ("Recorded liens", "https://onlineservices.miamidadeclerk.gov/officialrecords/"),
@@ -451,6 +463,10 @@ def appraiser_url(meta):
         return f"https://bcpa.net/RecInfo.asp?URL_Folio={diligence.compact_parcel(parcel)}"
     if county == "Miami-Dade":
         return f"https://www.miamidade.gov/Apps/PA/propertysearch/#/folio/{diligence.compact_parcel(parcel)}"
+    if county == "Palm Beach":
+        return "https://pbcpao.gov/"
+    if county == "Monroe":
+        return "https://www.mcpafl.org/"
     if county == "Lee":
         return f"https://www.leepa.org/Display/DisplayParcel.aspx?Strap={quote(parcel)}"
     return ""
@@ -701,6 +717,98 @@ def _desk_list(rows, filtered):
     return f"Next sale · {_day_heading(next_day, today)}", _verdict_groups(now) + later, len(now)
 
 
+def load_results():
+    try:
+        return json.loads((STATIC_DIR / "results.json").read_text())
+    except (OSError, json.JSONDecodeError):
+        return {"counties": []}
+
+
+def _percent(part, whole):
+    return f"{round(100 * part / whole)}%" if whole else "0%"
+
+
+def _ended_row(county, entry):
+    total = entry["total"]
+    parts = (("unsold", "did not sell"), ("kept", "went back to the plaintiff or certificate holder"), ("outside", "sold to an outside buyer"))
+    segments = "".join(
+        f'<span class="seg seg-{key}" style="flex-grow:{entry[key]}" title="{html.escape(county)}: {entry[key]:,} of {total:,} {label} ({_percent(entry[key], total)})"></span>'
+        for key, label in parts
+        if entry[key]
+    )
+    return (
+        f'<div class="result-row"><h4>{html.escape(county)} <span>{total:,} auctions</span></h4><div class="ended-bar" aria-hidden="true">{segments}</div>'
+        f'<p>{_percent(entry["unsold"], total)} did not sell · {_percent(entry["kept"], total)} kept · {_percent(entry["outside"], total)} outside buyer</p></div>'
+    )
+
+
+def _paid_row(county, entry, top):
+    if "median" not in entry:
+        return f'<div class="result-row"><h4>{html.escape(county)}</h4><p>Too few outside sales to say ({entry["buyers"]}).</p></div>'
+    width = 85 * entry["median"] / top
+    return (
+        f'<div class="result-row"><h4>{html.escape(county)} <span>{entry["buyers"]:,} buyers</span></h4>'
+        f'<div class="paid-line"><span class="paid-bar" style="width:{width:.1f}%" title="{html.escape(county)}: median {entry["median"]}×"></span><strong>{entry["median"]}×</strong></div></div>'
+    )
+
+
+def _median_text(entry):
+    return f"{entry['median']}×" if "median" in entry else "—"
+
+
+def render_results(summary):
+    sections = []
+    for kind, base in (("Foreclosure", "the final judgment"), ("Tax deed", "the opening bid")):
+        members = [(c["county"], e) for c in summary.get("counties", []) for e in c["kinds"] if e["kind"] == kind]
+        if not members:
+            continue
+        top = max([e.get("median", 0) for _, e in members] + [1])
+        rows = "".join(
+            f'<tr><th scope="row">{html.escape(county)}</th><td>{e["total"]:,}</td><td>{e["unsold"]:,}</td><td>{e["kept"]:,}</td><td>{e["outside"]:,}</td><td>{_median_text(e)}</td></tr>'
+            for county, e in members
+        )
+        sections.append(
+            f'<section class="result-kind"><h2>{kind}s</h2><div class="result-grid">'
+            f'<figure><figcaption>How the auctions ended</figcaption>{"".join(_ended_row(county, e) for county, e in members)}</figure>'
+            f'<figure><figcaption>What outside buyers paid, as a multiple of {base}. Typical sale.</figcaption>{"".join(_paid_row(county, e, top) for county, e in members)}</figure>'
+            f'</div><details class="result-table"><summary>See the numbers</summary><table><thead><tr><th>County</th><th>Auctions</th><th>Did not sell</th><th>Kept</th><th>Outside buyer</th><th>Median paid</th></tr></thead><tbody>{rows}</tbody></table></details></section>'
+        )
+    body = "".join(sections) or '<p class="quiet">No past results yet.</p>'
+    span = f'{summary["from"]} to {summary["through"]}. ' if summary.get("from") else ""
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a1021">
+<title>Past results · Hestia</title>
+<link rel="stylesheet" href="/static/desk.css">
+</head>
+<body class="results">
+<p><a href="/">‹ Desk</a></p>
+<h1>Past results</h1>
+<p class="quiet">{html.escape(span)}From the county auction sites. Kept means it went back to the plaintiff or the certificate holder. Prices are what was bid, not what a resale brought.</p>
+<ul class="result-legend" aria-label="Legend"><li><span class="seg-unsold"></span>Did not sell</li><li><span class="seg-kept"></span>Kept</li><li><span class="seg-outside"></span>Outside buyer</li></ul>
+{body}
+</body>
+</html>
+"""
+
+
+def _regions(rows, current):
+    """Counties north to south, then Lee. A county is a filter on where the sale came from."""
+    counts = {}
+    for deal in rows:
+        county = _meta(deal).get("county") or ""
+        if deal["status"] in ("Found", "Researched"):
+            counts[county] = counts.get(county, 0) + 1
+    links = [f'<a href="/"{" aria-current=page" if not current else ""}>All <span class="c">{sum(counts.values())}</span></a>']
+    for county in REGIONS:
+        on = " aria-current=page" if current == county else ""
+        links.append(f'<a href="/?source={quote(county)}"{on}>{html.escape(county)} <span class="c">{counts.get(county, 0)}</span></a>')
+    return f'<nav class="regions" aria-label="County">{"".join(links)}</nav>'
+
+
 def _pipeline(rows):
     groups = []
     for status in PIPELINE:
@@ -772,9 +880,11 @@ def render_page(rows, filters, error="", draft=None, everything=None):
     lane = (filter_status,) if filter_status else ("Found", "Researched")
     index_rows = [deal for deal in rows if deal["status"] in lane]
     index_title = filter_status or "From the auctions"
+    region = filters.get("source", "") if filters.get("source", "") in REGIONS else ""
     index_count = len(index_rows)
     if index_rows:
-        next_title, index, index_count = _desk_list(index_rows, any(filters.values()))
+        narrowed = any(value for key, value in filters.items() if not (key == "source" and value in REGIONS))
+        next_title, index, index_count = _desk_list(index_rows, narrowed)
         index_title = next_title or index_title
     elif any(filters.values()):
         index = '<p class="empty">No deals match these filters. <a href="/">Show all</a></p>'
@@ -859,9 +969,11 @@ def render_page(rows, filters, error="", draft=None, everything=None):
       <button type="submit">Add deal</button>
     </form>
   </details>
+  <a href="/results">Past results</a>
   {show_all}
   <a class="get-app" href="/static/hestia-native.apk" download>Get the Android app</a>
 </div>
+{_regions(everything, region)}
 <main class="desk">
   <div class="field">
     <section class="lane" aria-labelledby="index-title">
@@ -896,6 +1008,12 @@ class Handler(BaseHTTPRequestHandler):
                 return
             rows = _load(raw, parsed_filters) or []
             self._json([_prepare(row) for row in rows])
+            return
+        if parsed.path == "/api/results":
+            self._json(load_results())
+            return
+        if parsed.path == "/results":
+            self._html(render_results(load_results()))
             return
         if parsed.path == "/api/guide":
             self._json(guide())
@@ -1011,19 +1129,7 @@ class Handler(BaseHTTPRequestHandler):
         self._html(render_page(rows, raw, error=message, everything=_everything()))
 
     def _collect(self):
-        listings, notes = sources.collect()
-        added = updated = 0
-        with closing(deals.connect(DB_PATH)) as conn:
-            for listing in listings:
-                state = deals.upsert_listing(conn, listing)
-                if state == "added":
-                    added += 1
-                else:
-                    updated += 1
-            dropped = deals.drop_past_sales(conn, _today())
-        if dropped:
-            notes.append(f"Removed {dropped} untouched deals whose sale day has passed.")
-        self._json({"added": added, "updated": updated, "dropped": dropped, "notes": notes})
+        self._json(collect_step())
 
     def _json(self, payload, status=200):
         data = json.dumps(payload).encode()
@@ -1133,6 +1239,46 @@ def guide():
         "check_links": {county: [{"name": n, "url": u} for n, u in links] for county, links in CHECK_LINKS.items()},
         "rules_version": diligence.VERSION,
     }
+
+
+COLLECTING = {"running": False, "note": "", "result": None}
+COLLECT_LOCK = threading.Lock()
+
+
+def _collect_all():
+    def progress(note):
+        COLLECTING["note"] = note
+
+    try:
+        listings, notes = sources.collect(progress=progress)
+        added = updated = 0
+        with closing(deals.connect(DB_PATH)) as conn:
+            for listing in listings:
+                state = deals.upsert_listing(conn, listing)
+                if state == "added":
+                    added += 1
+                else:
+                    updated += 1
+            dropped = deals.drop_past_sales(conn, _today())
+        if dropped:
+            notes.append(f"Removed {dropped} untouched deals whose sale day has passed.")
+        result = {"added": added, "updated": updated, "dropped": dropped, "notes": notes}
+    except Exception as exc:
+        result = {"added": 0, "updated": 0, "dropped": 0, "notes": [f"Collecting stopped: {exc.__class__.__name__}."]}
+    COLLECTING.update(running=False, result=result)
+
+
+def collect_step(start=None):
+    """A full collect outlasts Cloudflare's 100-second limit, so it runs behind the request and the page asks again."""
+    with COLLECT_LOCK:
+        if COLLECTING["running"]:
+            return {"running": True, "note": COLLECTING["note"]}
+        if COLLECTING["result"]:
+            result, COLLECTING["result"] = COLLECTING["result"], None
+            return {"running": False, **result}
+        COLLECTING.update(running=True, note="Collecting…")
+        threading.Thread(target=start or _collect_all, daemon=True).start()
+    return {"running": True, "note": COLLECTING["note"]}
 
 
 def _rescore(deal):

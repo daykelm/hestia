@@ -20,7 +20,7 @@ Wholesaler CRMs start from leads someone already found. Auction desks stop at a 
 
 ## Operating Context
 
-- Counties: Broward, Miami-Dade, and Lee from the RealAuction calendars. Collier tax deeds are in person and not collected.
+- Counties: Palm Beach, Broward, Miami-Dade, Monroe tax deeds, and Lee from the RealAuction calendars, for the next 45 days. Collier is not on those calendars and is not collected.
 - Weekly loop: collect upcoming sales, score them, skim the best, then check title and condition by hand for the few worth pursuing.
 - Sale days come in batches of 20 to 40 properties. Untouched deals drop off after their sale day.
 - Runs on his Umbrel home server at `umbrel.local:18080`, and at `hestia.trading` behind Cloudflare Access. The same machine runs a Bitcoin node and a mining pool, which must not be disturbed.

@@ -1,7 +1,7 @@
 FROM python:3.12-slim
 
 WORKDIR /app
-COPY app.py deals.py sources.py diligence.py ./
+COPY app.py deals.py sources.py diligence.py history.py ./
 COPY static ./static
 
 # shortcut: runs as root so the Umbrel data folder stays writable, switch to a fixed uid if this port is reachable past the home network

@@ -281,9 +281,14 @@ document.getElementById("score").addEventListener("click", async (event) => {
 document.getElementById("collect").addEventListener("click", async (event) => {
   const button = event.currentTarget;
   button.disabled = true;
-  note.textContent = "Collecting Broward, Miami-Dade, and Lee. This takes about a minute…";
+  note.textContent = "Collecting every county. This takes a few minutes, and you can leave this page open…";
   try {
-    const result = await post("/api/collect");
+    let result = await post("/api/collect");
+    while (result.running) {
+      note.textContent = result.note;
+      await new Promise((done) => setTimeout(done, 4000));
+      result = await post("/api/collect");
+    }
     finish(`Added ${result.added}, updated ${result.updated}. ${result.notes.join(" ")}`);
   } catch (error) {
     note.textContent = "The collect request did not finish. Check the connection and press Collect again.";

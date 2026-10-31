@@ -18,6 +18,8 @@ const VERDICTS: [string, boolean][] = [
   ["No price on the list", false],
 ];
 
+const REGIONS = ["Palm Beach", "Broward", "Miami-Dade", "Monroe", "Lee"];
+
 const verdictOf = (d: Deal) => d.costs?.verdict || "No price on the list";
 const compact = (n: number) => (n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `$${Math.round(n / 1e3)}K` : `$${Math.round(n)}`);
 
@@ -47,10 +49,20 @@ export default function Desk() {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [more, setMore] = useState(false);
+  const [region, setRegion] = useState("");
   const [toggled, setToggled] = useState<Record<string, boolean>>({});
   const steps = guide?.steps || [];
 
-  const lane = useMemo(() => deals.filter((d) => (step ? [step] : ["Found", "Researched"]).includes(d.status)), [deals, step]);
+  const lane = useMemo(
+    () => deals.filter((d) => (step ? [step] : ["Found", "Researched"]).includes(d.status) && (!region || d.metadata.county === region)),
+    [deals, step, region],
+  );
+
+  const regionCounts = useMemo(() => {
+    const c: Record<string, number> = {};
+    for (const d of deals) if (["Found", "Researched"].includes(d.status)) c[d.metadata.county || ""] = (c[d.metadata.county || ""] || 0) + 1;
+    return c;
+  }, [deals]);
 
   const { title, sections } = useMemo(() => {
     const upcoming = lane.map(saleDay).filter((day) => day >= today());
@@ -89,9 +101,15 @@ export default function Desk() {
 
   async function collect() {
     setBusy(true);
-    setNote("Collecting Broward, Miami-Dade, and Lee. This takes about a minute…");
+    setNote("Collecting every county. This takes a few minutes…");
     try {
-      const result = await postForm<{ added: number; updated: number; notes: string[] }>("/api/collect");
+      type Step = { running: boolean; note?: string; added: number; updated: number; notes: string[] };
+      let result = await postForm<Step>("/api/collect");
+      while (result.running) {
+        setNote(result.note || "Collecting…");
+        await new Promise((done) => setTimeout(done, 4000));
+        result = await postForm<Step>("/api/collect");
+      }
       setNote(`Added ${result.added}, updated ${result.updated}. ${result.notes.join(" ")}`);
       await refresh();
     } catch {
@@ -133,6 +151,15 @@ export default function Desk() {
         </>
       ) : null}
       {note ? <Text style={styles.note}>{note}</Text> : null}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.process}>
+        <Chip label="All" on={!region} onPress={() => setRegion("")} count={Object.values(regionCounts).reduce((a, b) => a + b, 0)} />
+        {REGIONS.map((name) => (
+          <Chip key={name} label={name} on={region === name} onPress={() => setRegion(name)} count={regionCounts[name] || 0} />
+        ))}
+      </ScrollView>
+      <Pressable onPress={() => router.push("/results")} accessibilityRole="link" style={styles.moreToggle}>
+        <Text style={styles.moreText}>Past results by county</Text>
+      </Pressable>
       <Text style={styles.title}>{title}</Text>
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>

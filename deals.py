@@ -309,6 +309,14 @@ def pending_scores(conn, limit, version=0, only=None):
         deal = dict(row)
         deal["metadata"] = meta
         pending.append(deal)
+    # Soonest sale first, so a spent report goes to the deal that matters next.
+    def soonest(deal):
+        try:
+            return datetime.strptime(deal["metadata"].get("sale_date") or "", "%m/%d/%Y").date().toordinal()
+        except ValueError:
+            return 10**9
+
+    pending.sort(key=soonest)
     return pending[:limit], len(pending)
 
 

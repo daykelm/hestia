@@ -1,5 +1,6 @@
 import os
 import tempfile
+import time
 import unittest
 from datetime import date, timedelta
 from pathlib import Path
@@ -8,6 +9,7 @@ from unittest import mock
 import app
 import deals
 import diligence
+import history
 import sources
 
 
@@ -170,6 +172,8 @@ class DealTests(unittest.TestCase):
         """
         sales, _ = sources.parse_calendar(calendar, today=date(2026, 10, 29))
         self.assertEqual([sale["date"] for sale in sales], ["11/23/2026"])
+        more, _ = sources.parse_calendar("<div dayid='11/24/2026'>Tax Deed<br>TD</div><div dayid='11/23/2026'>Foreclosure<br>F</div>", today=date(2026, 10, 29))
+        self.assertEqual([sale["date"] for sale in more], ["11/23/2026", "11/24/2026"])
         _, next_link = sources.parse_calendar(
             '<a href="calendar&selCalDate=%7Bts%20%272026%2D11%2D01%27%7D" aria-label="Next Month November">',
             today=date(2026, 10, 29),
@@ -417,6 +421,37 @@ class DealTests(unittest.TestCase):
         self.assertEqual(unscored["verdict"], "Not scored yet")
         no_report = diligence.costs(1000, {"kind": "Foreclosure", "roll_value": 9000, "diligence": {"score": 6, "band": "good"}})
         self.assertEqual(no_report["verdict"], "Can't say yet")
+
+    def test_results_count_each_auction_once_and_need_enough_buyers(self):
+        def row(aid, status="Auction Sold", to="3rd Party Bidder", amount="$200.00"):
+            return {"county": "Broward", "host": "h", "aid": str(aid), "day": "01/02/2026", "Auction Type": "FORECLOSURE", "Final Judgment Amount": "$100.00", "status": status, "sold_to": to, "amount": amount}
+
+        rows = [row(n) for n in range(10)] + [row(0)] + [row(50, to="Plaintiff"), row(51, status="B", to="", amount="")]
+        entry = history.summarize(rows)["counties"][0]["kinds"][0]
+        self.assertEqual((entry["total"], entry["outside"], entry["kept"], entry["unsold"], entry["median"]), (12, 10, 1, 1, 2.0))
+        few = history.summarize(rows[:3])["counties"][0]["kinds"][0]
+        self.assertNotIn("median", few)
+        page = app.render_results(history.summarize(rows))
+        self.assertIn("2.0×", page)
+        self.assertIn("Too few", app.render_results(history.summarize(rows[:3])))
+
+    def test_collect_runs_behind_the_request_and_reports_once(self):
+        def finish():
+            app.COLLECTING.update(running=False, result={"added": 3, "notes": []})
+
+        first = app.collect_step(start=finish)
+        self.assertTrue(first["running"])
+        for _ in range(100):
+            if not app.COLLECTING["running"]:
+                break
+            time.sleep(0.01)
+        self.assertEqual(app.collect_step(start=finish)["added"], 3)
+
+    def test_regions_are_tabs_and_keep_the_next_sale_view(self):
+        rows = [{"id": 1, "address": "1 Oak", "location": "", "price": 1000, "estimated_value": None, "spread": None, "source": "Broward tax deed", "notes": "", "link": "", "status": "Researched", "metadata": {"county": "Broward", "kind": "Tax deed", "sale_date": (date.today() + timedelta(days=2)).strftime("%m/%d/%Y"), "roll_value": 9000, "diligence": {"score": 7, "band": "good"}}}]
+        page = app.render_page(rows, {"source": "Broward"})
+        self.assertIn('href="/?source=Palm%20Beach"', page)
+        self.assertIn("Next sale", page)
 
     def test_street_photo_needs_a_key_and_falls_back_to_the_satellite(self):
         with mock.patch.dict(os.environ, {"GOOGLE_MAPS_KEY": ""}):

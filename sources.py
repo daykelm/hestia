@@ -4,7 +4,7 @@ import json
 import re
 import time
 import urllib.request
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from html import unescape
 
 # Broward and Lee split tax deeds and foreclosures. Miami-Dade publishes both on one calendar.
@@ -16,6 +16,9 @@ _BID_HOST = {
     ("Miami-Dade", "foreclosure"): "https://www.miamidade.realforeclose.com",
     ("Lee", "tax deed"): "https://lee.realtaxdeed.com",
     ("Lee", "foreclosure"): "https://lee.realforeclose.com",
+    ("Palm Beach", "tax deed"): "https://palmbeach.realtaxdeed.com",
+    ("Palm Beach", "foreclosure"): "https://palmbeach.realforeclose.com",
+    ("Monroe", "tax deed"): "https://monroe.realtaxdeed.com",
 }
 
 
@@ -29,16 +32,21 @@ def bid_url(meta):
 
 
 SITES = (
+    {"county": "Palm Beach", "host": "https://palmbeach.realtaxdeed.com"},
+    {"county": "Palm Beach", "host": "https://palmbeach.realforeclose.com"},
     {"county": "Broward", "host": "https://broward.realtaxdeed.com"},
     {"county": "Broward", "host": "https://broward.realforeclose.com"},
     {"county": "Miami-Dade", "host": "https://www.miamidade.realforeclose.com"},
+    {"county": "Monroe", "host": "https://monroe.realtaxdeed.com"},
     {"county": "Lee", "host": "https://lee.realtaxdeed.com"},
     {"county": "Lee", "host": "https://lee.realforeclose.com"},
 )
 
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
-# shortcut: six pages per sale day, raise the cap if a single county sale no longer fits
-MAX_PAGES = 6
+# shortcut: twelve pages per sale day, raise the cap if a single county sale no longer fits
+MAX_PAGES = 12
+# Sales past this are often canceled or reset before their day, and each one costs a loan report to score.
+HORIZON_DAYS = 45
 
 _REPLACEMENTS = (
     ("@A", '<div class="'),
@@ -78,11 +86,7 @@ def parse_calendar(html, today=None):
     found = re.search(r'href="([^"]*selCalDate=[^"]+)"[^>]*aria-label="Next Month', html)
     if found:
         next_link = unescape(found.group(1))
-    # Earliest upcoming day for each kind.
-    chosen = {}
-    for sale in sorted(sales, key=lambda item: item["when"]):
-        chosen.setdefault(sale["kind"], sale)
-    return list(chosen.values()), next_link
+    return sorted(sales, key=lambda item: item["when"]), next_link
 
 
 def parse_listings(html, *, county, kind, sale_date, page_url):
@@ -112,6 +116,9 @@ def parse_listings(html, *, county, kind, sale_date, page_url):
         # Foreclosures publish no opening bid. The judgment is what the lender can bid up to.
         price = opening if opening is not None else judgment
         basis = "opening bid" if opening is not None else "final judgment" if judgment is not None else ""
+        # A calendar day can mix both kinds, so the row's own type decides.
+        auction_type = fields.get("Auction Type", "").upper()
+        kind = "Tax deed" if "TAX" in auction_type else "Foreclosure" if "FORECLOS" in auction_type else kind
         listings.append(
             {
                 "dedupe_key": f"{county.lower()}|{parcel_key or address.lower()}",
@@ -171,10 +178,13 @@ def _sale_days(opener, host):
         _, nxt = _get(opener, next_link)
         more, _ = parse_calendar(nxt)
         sales.extend(more)
-    chosen = {}
-    for sale in sorted(sales, key=lambda item: item["when"]):
-        chosen.setdefault(sale["kind"], sale)
-    return list(chosen.values())
+    # A day can appear once per kind, and its page lists both, so each day is read once.
+    days = {}
+    last = date.today() + timedelta(days=HORIZON_DAYS)
+    for sale in sales:
+        if sale["when"] <= last:
+            days.setdefault(sale["date"], sale)
+    return list(days.values())
 
 
 def _load_page(opener, host, page):
@@ -215,16 +225,18 @@ def collect_site(site, opener=None):
     return listings
 
 
-def collect(sites=SITES):
+def collect(sites=SITES, progress=None):
     """Returns listings and a short note per site. One site failing leaves the others."""
     listings = []
     notes = []
     for site in sites:
+        if progress:
+            progress(f"Collecting {site['county']}…")
         try:
             found = collect_site(site)
             listings.extend(found)
             notes.append(f"{site['county']}: {len(found)} from {site['host'].split('//')[1]}")
         except Exception as exc:
             notes.append(f"{site['county']}: {exc.__class__.__name__}")
-    notes.append("Collier tax deeds are in-person at the clerk and are not on these auction calendars.")
+    notes.append("Collier is not on these auction calendars. Monroe foreclosures are not either.")
     return listings, notes

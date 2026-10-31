@@ -63,6 +63,21 @@ The ceiling is typed in Hestia, typed again on RealAuction, and the buyer is typ
 
 Done when a pursued deal goes from ceiling to a buyer message without typing the same number twice, and without writing the summary by hand.
 
+### Epic: Sale-day plan
+
+Ideas taken from [LoomBids](https://loombids.com/en/), a bidding tool for car auctions such as Copart, seen from its public page only. Hestia takes the plan around the bid, and a person still places every bid.
+
+- [ ] Watchlist for each sale: the address, the verdict, the ceiling, whether the deposit cleared, and whether title is checked.
+- [ ] Stages for each deal on the list: To configure, Upcoming, Live, Closed. They sit on top of the seven steps and do not replace them.
+- [ ] A budget and a target for each sale day, such as $150,000 across 2 properties. Warn when the ceilings add up to more than the budget.
+- [ ] Stop at the target. After enough wins, tell the user to cancel the remaining maximums on the county site. Hestia cannot cancel them itself.
+- [ ] "What it typically sells for" on each card, from the past results of similar sales in that county.
+- [ ] Once there is a team, tie each ceiling and result to the person who set it, with a limit per person. This waits for accounts under [Toward many users](#toward-many-users).
+
+Done when a sale morning shows every ceiling against one budget, and a win makes clear which maximums to cancel.
+
+Automatic bidding stays out of scope. Revisit it only after real closed deals, verdicts that held up against results, and written permission or an official route from RealAuction. The county site already bids up to a maximum, so the problem left is setting the right number.
+
 ## Toward many users
 
 The builder is the first user of many, and so far the only one. Every feature still has to work for that one user first. Nothing here starts before the first real deal, and accounts are not built before a second user is close.

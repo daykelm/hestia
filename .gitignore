@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 data/*.db
+data/*.jsonl
 .DS_Store
 .cursor/
 .tools/

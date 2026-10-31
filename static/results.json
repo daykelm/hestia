@@ -1,0 +1,110 @@
+{
+ "from": "10/30/2025",
+ "through": "10/30/2026",
+ "counties": [
+  {
+   "county": "Palm Beach",
+   "kinds": [
+    {
+     "kind": "Foreclosure",
+     "total": 1486,
+     "unsold": 952,
+     "kept": 304,
+     "outside": 230,
+     "buyers": 229,
+     "median": 1.15
+    },
+    {
+     "kind": "Tax deed",
+     "total": 874,
+     "unsold": 837,
+     "kept": 6,
+     "outside": 31,
+     "buyers": 31,
+     "median": 5.01
+    }
+   ]
+  },
+  {
+   "county": "Broward",
+   "kinds": [
+    {
+     "kind": "Foreclosure",
+     "total": 2428,
+     "unsold": 1577,
+     "kept": 484,
+     "outside": 367,
+     "buyers": 366,
+     "median": 1.31
+    },
+    {
+     "kind": "Tax deed",
+     "total": 30,
+     "unsold": 24,
+     "kept": 2,
+     "outside": 4,
+     "buyers": 4
+    }
+   ]
+  },
+  {
+   "county": "Miami-Dade",
+   "kinds": [
+    {
+     "kind": "Foreclosure",
+     "total": 2563,
+     "unsold": 1676,
+     "kept": 476,
+     "outside": 411,
+     "buyers": 407,
+     "median": 1.26
+    },
+    {
+     "kind": "Tax deed",
+     "total": 695,
+     "unsold": 632,
+     "kept": 9,
+     "outside": 54,
+     "buyers": 54,
+     "median": 5.85
+    }
+   ]
+  },
+  {
+   "county": "Monroe",
+   "kinds": [
+    {
+     "kind": "Tax deed",
+     "total": 25,
+     "unsold": 16,
+     "kept": 1,
+     "outside": 8,
+     "buyers": 8
+    }
+   ]
+  },
+  {
+   "county": "Lee",
+   "kinds": [
+    {
+     "kind": "Foreclosure",
+     "total": 1221,
+     "unsold": 488,
+     "kept": 544,
+     "outside": 189,
+     "buyers": 189,
+     "median": 0.94
+    },
+    {
+     "kind": "Tax deed",
+     "total": 1017,
+     "unsold": 756,
+     "kept": 6,
+     "outside": 255,
+     "buyers": 255,
+     "median": 5.95
+    }
+   ]
+  }
+ ]
+}
