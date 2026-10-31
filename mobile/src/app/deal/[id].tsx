@@ -81,7 +81,7 @@ export default function DealScreen() {
             {deal.card.map((line) => (
               <View key={line.label} style={styles.briefItem}>
                 <Text style={styles.dt}>{line.label}</Text>
-                <Text style={[styles.briefText, (line.label === "Danger" && line.text !== "None on record" || line.label === "Tax" && line.text.startsWith("Delinquent") || line.label === "Cause" && (line.text.includes("HOA") || line.text.includes(" and "))) && { color: color.amber }]}>{line.text}</Text>
+                <Text style={[styles.briefText, (line.label === "Danger" && line.text !== "None on record" || line.label === "Tax" && line.text.startsWith("Delinquent") || line.label === "Cause" && (line.text.includes("HOA") || line.text.includes(" and ")) || line.label === "Also" && (line.text.startsWith("Not this door") || line.text.startsWith("Parcel record") || line.text.includes("Disagrees"))) && { color: color.amber }]}>{line.text}</Text>
               </View>
             ))}
           </View>

@@ -4,6 +4,8 @@ import json
 import math
 import os
 import re
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import date
@@ -19,6 +21,8 @@ LEE = "https://gismapserver.leegov.com/gisserver910/rest/services/DataExplorer/P
 LEE_NUISANCE = "https://services2.arcgis.com/LvWGAAhHwbCJ2GMP/arcgis/rest/services/NuisanceAccumulationViolations/FeatureServer/0/query"
 FEMA = "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query"
 CENSUS = "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress"
+FIPS = {"Broward": "12011", "Miami-Dade": "12086", "Lee": "12071"}
+_UNIT = re.compile(r"(?:#|\b(?:APT|UNIT|STE|SUITE)\b)\s*[A-Z0-9-]+", re.I)
 
 RECENT_SALE_YEAR = 2023
 BANDS = {
@@ -443,6 +447,8 @@ def fold_attom(row, kind, case=""):
             graded[key] = row[key]
     if cause:
         graded["cause"] = cause
+    if row.get("reapi"):
+        graded["reapi"] = row["reapi"]
     return graded
 
 
@@ -470,6 +476,8 @@ def apply_review(row, review, today=None):
         graded["tax"] = row["tax"]
     if row.get("cause"):
         graded["cause"] = row["cause"]
+    if row.get("reapi"):
+        graded["reapi"] = row["reapi"]
     return graded
 
 
@@ -777,6 +785,180 @@ def attom_lines(address, location):
     except Exception:
         return {}
     return parse_attom(payload)
+
+
+def _extra_unit(listing, found):
+    return bool(_UNIT.search(found or "")) and not _UNIT.search(listing or "")
+
+
+def _loan_open(text):
+    if not (text or "").strip():
+        return None
+    return not text.startswith("No open loan")
+
+
+def _tax_late(text):
+    if not (text or "").strip():
+        return None
+    return text.startswith("Delinquent")
+
+
+def parse_reapi(payload, address, parcel=""):
+    """Loan and tax from one Property Detail. A unit the sale list did not name is not this door."""
+    data = (payload or {}).get("data") or {}
+    if isinstance(data, list):
+        data = data[0] if data else {}
+    if not data:
+        return {"match": "miss"}
+    info = data.get("propertyInfo") or {}
+    addr = info.get("address") or {}
+    label = addr.get("label") if isinstance(addr, dict) else ""
+    loans = []
+    for item in data.get("currentMortgages") or []:
+        if not isinstance(item, dict):
+            continue
+        amount = _dollars(item.get("amount"))
+        lender = (item.get("lenderName") or "").strip()
+        when = _year(item.get("documentDate") or item.get("recordingDate"))
+        line = " · ".join(part for part in (lender, amount, when) if part)
+        if line:
+            loans.append((line, amount))
+    if loans:
+        loan = loans[0][0]
+        extra = [amount for _, amount in loans[1:] if amount]
+        if extra:
+            loan += ", plus " + extra[0]
+    elif data.get("freeClear") or data.get("openMortgageBalance") in (0, "0"):
+        loan = "No open loan on the report"
+    else:
+        loan = _dollars(data.get("openMortgageBalance"))
+    tax_block = data.get("taxInfo") or {}
+    bill = _dollars(tax_block.get("taxAmount"))
+    year = _year(tax_block.get("year"))
+    if data.get("taxLien"):
+        tax = "Delinquent" + (f", bill {bill}" if bill else "")
+    elif bill:
+        tax = f"Tax bill {bill}" + (f" for {year}" if year else "")
+    else:
+        tax = ""
+    apn = ((data.get("lotInfo") or {}).get("apnUnformatted") or (data.get("lotInfo") or {}).get("apn") or "")
+    ours = compact_parcel(parcel)
+    if ours and ours != "PROPERTYAPPRAISER" and compact_parcel(apn) == ours:
+        match = "parcel"
+    else:
+        left, right = house_number(address), house_number(label)
+        if left and right and left == right:
+            match = "unit" if _extra_unit(address, label) else "address"
+        elif label:
+            match = "other"
+        else:
+            match = "miss"
+    found = {"match": match, "address": label or ""}
+    if loan:
+        found["loan"] = loan
+    if tax:
+        found["tax"] = tax
+    return found
+
+
+def reapi_sentence(report, listing="", loan="", tax=""):
+    """The card line. The score still uses the ATTOM loan and tax."""
+    if not report:
+        return ""
+    if report.get("match") == "miss":
+        return "No record for this address."
+    body = ". ".join(part for part in (report.get("loan"), report.get("tax")) if part) or "No loan or tax on this report."
+    found = report.get("address") or ""
+    if report.get("match") in ("unit", "other"):
+        return f"Not this door: {found or 'a different property'}. {body}"
+    if _extra_unit(listing, found):
+        body = f"Parcel record is {found}. {body}"
+    open_loan = _loan_open(loan), _loan_open(report.get("loan") or "")
+    late = _tax_late(tax), _tax_late(report.get("tax") or "")
+    if (None not in open_loan and open_loan[0] != open_loan[1]) or (None not in late and late[0] != late[1]):
+        body += " Disagrees with the loan report."
+    return body
+
+
+def _mailing(address, location):
+    house, street, city, zip_code = _parts(address, location)
+    line = " ".join(part for part in (house, street) if part)
+    state_zip = " ".join(part for part in ("FL", zip_code) if part)
+    place = ", ".join(part for part in (city, state_zip) if part)
+    return f"{line}, {place}" if place else line
+
+
+def _parts(address, location):
+    words = []
+    for word in (address or "").split():
+        words.append(word.upper() if word.upper() in _DIRECTIONS else (word.title() if word.isupper() else word))
+    house = words[0] if words and words[0][:1].isdigit() else ""
+    street = " ".join(words[1:] if house else words)
+    zip_code = ""
+    found = re.search(r"\b(\d{5})\b", location or "")
+    if found:
+        zip_code = found.group(1)
+    city = re.split(r",|\bFL\b", location or "", maxsplit=1)[0].strip(" -")
+    if city.isupper():
+        city = city.title()
+    return house, street, city, zip_code
+
+
+def _reapi_post(body):
+    key = os.environ.get("REALESTATE_API_KEY", "").strip()
+    if not key:
+        return None
+    request = urllib.request.Request(
+        "https://api.realestateapi.com/v2/PropertyDetail",
+        data=json.dumps(body).encode(),
+        headers={"x-api-key": key, "Content-Type": "application/json", "Accept": "application/json"},
+        method="POST",
+    )
+    for attempt in range(2):
+        try:
+            with urllib.request.urlopen(request, timeout=25) as response:
+                return json.loads(response.read().decode())
+        except urllib.error.HTTPError as error:
+            if error.code == 404:
+                return {"data": {}}
+            if error.code == 429 and attempt == 0:
+                time.sleep(2)
+                continue
+            raise
+    return {"data": {}}
+
+
+def reapi_report(address, location, parcel="", county=""):
+    """One Property Detail. A second credit is spent only when the street hit a different door and a parcel id exists."""
+    # shortcut: comps, skip trace, and involuntary liens are separate prices, leave them off
+    house, street, city, zip_code = _parts(address, location)
+    if house and street and (city or zip_code):
+        body = {"house": house, "street": street, "state": "FL", "exact_match": True}
+        if city:
+            body["city"] = city
+        if zip_code:
+            body["zip"] = zip_code
+    else:
+        body = {"address": _mailing(address, location), "exact_match": True}
+    payload = _reapi_post(body)
+    if payload is None:
+        return {}
+    report = parse_reapi(payload, address, parcel)
+    fips = FIPS.get(county or "")
+    ours = compact_parcel(parcel)
+    if report.get("match") not in ("unit", "other", "miss") or not fips or not ours or ours == "PROPERTYAPPRAISER":
+        return report
+    second = _reapi_post({"apn": ours, "fips": fips, "exact_match": True})
+    other = parse_reapi(second, address, parcel)
+    if other.get("match") in ("parcel", "address"):
+        return other
+    if report.get("match") == "miss":
+        fuzzy = dict(body)
+        fuzzy["exact_match"] = False
+        third = parse_reapi(_reapi_post(fuzzy), address, parcel)
+        if third.get("match") != "miss":
+            return third
+    return report if report.get("match") != "miss" else other
 
 
 def _county(county, parcel, facts):

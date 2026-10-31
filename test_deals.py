@@ -236,6 +236,21 @@ class DealTests(unittest.TestCase):
         self.assertEqual(report["loan"], "WELLS FARGO · $180,000 · 2019, plus $25,000")
         self.assertEqual(report["tax"], "Delinquent since 2023, bill $4,200")
         self.assertEqual(diligence.parse_attom({}), {})
+        same = diligence.parse_reapi(
+            {"data": {"propertyInfo": {"address": {"label": "12 SW 3 Ave, Miami, FL 33101"}}, "freeClear": True, "taxInfo": {"taxAmount": "1200", "year": 2024}, "lotInfo": {"apn": "01-02"}}},
+            "12 SW 3 AVE",
+            "01-02",
+        )
+        self.assertEqual(same["match"], "parcel")
+        self.assertEqual(same["loan"], "No open loan on the report")
+        self.assertIn("Tax bill $1,200 for 2024", diligence.reapi_sentence(same, "12 SW 3 AVE", report["loan"], report["tax"]))
+        unit = diligence.parse_reapi(
+            {"data": {"propertyInfo": {"address": {"label": "12 SW 3 Ave Apt 4"}}, "currentMortgages": [{"lenderName": "BANK", "amount": 50000, "documentDate": "2018-01-02"}], "taxLien": True, "taxInfo": {"taxAmount": "800"}}},
+            "12 SW 3 AVE",
+        )
+        self.assertEqual(unit["match"], "unit")
+        self.assertTrue(diligence.reapi_sentence(unit, "12 SW 3 AVE").startswith("Not this door"))
+        self.assertIn("Disagrees", diligence.reapi_sentence(same, "12 SW 3 AVE", "No open loan on the report", "Delinquent since 2023"))
         self.assertFalse(record["homestead"])
         comps = diligence.parse_broward_comps(
             "5/15/2026 04 WD 120890819 Q $203,000 6/26/2026 04 QCD 120993106 T $100 "

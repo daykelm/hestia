@@ -90,12 +90,12 @@ The comparison was about a second loan-and-tax source, not a replacement for the
 
 | Vendor | Published offer | Decision |
 | --- | --- | --- |
-| RealEstateAPI pay as you go | $0.10 per property record, no minimum, no autocomplete | The only paid experiment. Four Property Detail calls, about $0.40. Street and parcel lookups on two auction addresses returned a unit the sale list did not name, so the loan and tax could not be lined up with ATTOM. The rest of the list was not pulled. |
+| RealEstateAPI pay as you go | $0.10 per property record, no minimum, no autocomplete. A $200 credit is in use. | Pulled for the current sale list. The Also line on the card shows it. The score still uses ATTOM. A street match often returned a different unit, so the pull prefers the county parcel id. |
 | RealEstateAPI Starter | $599 a month, 30,000 credits. The published price assumes an annual term. | Not bought. |
 | RealEstateAPI Growth | $1,200 a month, 150,000 credits | Not bought. |
 | RealEstateAPI Pro | $2,500 a month, 400,000 credits | Not bought. |
 | RealEstateAPI Enterprise | Contact sales | Not contacted. |
-| RealEstateAPI free trial | $200 of credits, 14 days, no card. It does not turn into the $599 plan by itself. | Not started. |
+| RealEstateAPI free trial | $200 of credits, 14 days, no card. It does not turn into the $599 plan by itself. | This is the credit in use. |
 | ATTOM after the trial | No public self-serve price was chosen | Still on the trial key. |
 | RentCast | A small monthly plan, and 50 free calls a month | Not used. It does not return an open loan or a delinquent year, and 50 calls is smaller than one sale list. |
 | Estated | Old free-credit offer | Not available to new customers. ATTOM acquired it in 2022. |
@@ -103,7 +103,7 @@ The comparison was about a second loan-and-tax source, not a replacement for the
 
 RealEstateAPI extras that were not turned on, because they cost more: comparable sales, skip trace, and involuntary liens. Property Search count calls also spend a credit on pay as you go, so those were not used either.
 
-`REALESTATE_API_KEY` is on the Umbrel host `.env` only. It is not in the container and not in the score.
+`REALESTATE_API_KEY` is in the Umbrel container. A rescore does not call RealEstateAPI again. The Also line is the stored report.
 
 ## What is still by hand
 

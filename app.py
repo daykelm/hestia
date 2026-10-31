@@ -130,7 +130,7 @@ HELP = {
     "code": ("Code and building", "Open code cases, unpaid code liens, and unsafe-structure cases from the county. Miami-Dade has three sources and Lee has one. Broward has no public source yet, so it stays unchecked there."),
     "flood": ("Flood", "FEMA's flood map at the property. 2 points for minimal hazard, 1 for the 0.2% zone, 0 where flood insurance is required. Coastal V zones are a red warning."),
     "occupancy": ("Occupancy", "Whether someone likely lives there. A homestead exemption, or the owner's mail going to the property, means someone probably does. 1 point for no homestead on the roll, 2 when the owner's mail also goes elsewhere. It is a signal, not a drive-by."),
-    "liens": ("Other liens", "ATTOM reports the open loan and whether the tax is delinquent. Delinquent taxes on a foreclosure, or a second loan on a foreclosure, turn the deal red. A tax deed is expected to be delinquent, and it clears private loans, so those do not. Judgments and association liens still need your clerk search."),
+    "liens": ("Other liens", "ATTOM reports the open loan and whether the tax is delinquent. That is the Loan and Tax lines, and it is what the score uses. The Also line is a second report and does not change the color. Delinquent taxes on a foreclosure, or a second loan on a foreclosure, turn the deal red. A tax deed is expected to be delinquent, and it clears private loans, so those do not. Judgments and association liens still need your clerk search."),
     "status": ("Step", "Where a deal sits in your process: Found, Researched, Title checked, Bid set, Won, Buyer assigned, Closed. Passed is a deal you dropped."),
     "steps": ("The process", "Every deal moves through seven steps. Hestia does Found and Researched for you. Title checked is your docket and lien search. Bid set is your ceiling. Won, Buyer assigned, and Closed track the deal to the end."),
     "location": ("Location", "City or zip code. Part of a word is enough: “Lauder” matches Lauderhill and Fort Lauderdale."),
@@ -434,6 +434,9 @@ def card_lines(deal):
         lines.append({"label": "Loan", "text": row["loan"]})
     if row.get("tax"):
         lines.append({"label": "Tax", "text": row["tax"]})
+    also = diligence.reapi_sentence(row.get("reapi"), deal.get("address") or "", row.get("loan") or "", row.get("tax") or "")
+    if also:
+        lines.append({"label": "Also", "text": also})
     return lines
 
 
@@ -476,6 +479,7 @@ def _brief(deal):
             (line["label"] == "Danger" and line["text"] != "None on record")
             or (line["label"] == "Tax" and line["text"].startswith("Delinquent"))
             or (line["label"] == "Cause" and ("HOA" in line["text"] or " and " in line["text"]))
+            or (line["label"] == "Also" and (line["text"].startswith("Not this door") or line["text"].startswith("Parcel record") or "Disagrees" in line["text"]))
         )
         hot = " hot" if marked else ""
         lines.append(f'<div><dt>{html.escape(line["label"])}</dt><dd class="{hot.strip()}">{html.escape(line["text"])}</dd></div>')
@@ -1114,6 +1118,9 @@ def _rescore(deal):
     result = diligence.research(deal)
     graded = result["diligence"]
     meta = deal.get("metadata") or {}
+    kept = (meta.get("diligence") or {}).get("reapi")
+    if kept:
+        graded["reapi"] = kept
     if meta.get("title") and meta.get("liens"):
         graded = diligence.apply_review(graded, {"title": True, "liens": True})
     with closing(deals.connect(DB_PATH)) as conn:
