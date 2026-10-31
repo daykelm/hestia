@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="sky">#0a1021</color>
+    <color name="red">#ff4d2e</color>
+    <style name="Desk" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/sky</item>
+        <item name="android:statusBarColor">@color/sky</item>
+        <item name="android:navigationBarColor">@color/sky</item>
+        <item name="android:colorAccent">@color/red</item>
+    </style>
+</resources>

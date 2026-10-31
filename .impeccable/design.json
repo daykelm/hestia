@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-29T09:46:00-04:00",
+  "title": "Design System: Hestia",
+  "extensions": {
+    "colorMeta": {
+      "red": { "role": "primary", "displayName": "Night-Vision Red", "canonical": "#ff4d2e", "tonalRamp": ["#3d0d05", "#6b1709", "#9c220e", "#c8331a", "#ff4d2e", "#ff7a62", "#ffa898", "#ffd6ce"] },
+      "red-hover": { "role": "primary", "displayName": "Warm Signal Red", "canonical": "#ff6a4f", "tonalRamp": ["#40120a", "#701f11", "#a32e19", "#d44024", "#ff6a4f", "#ff8d78", "#ffb3a5", "#ffdbd4"] },
+      "amber": { "role": "secondary", "displayName": "Glow Amber", "canonical": "#ffb36b", "tonalRamp": ["#3a2208", "#633b10", "#8f5719", "#bf7624", "#ff9d3f", "#ffb36b", "#ffcd9c", "#ffe8d0"] },
+      "sky": { "role": "neutral", "displayName": "Night Sky", "canonical": "#0a1021", "tonalRamp": ["#05080f", "#0a1021", "#111a30", "#16233d", "#24374f", "#3a4a63", "#6b7a92", "#a9b4c7"] },
+      "indigo": { "role": "neutral", "displayName": "Deep Indigo", "canonical": "#111a30", "tonalRamp": ["#05080f", "#0a1021", "#111a30", "#16233d", "#24374f", "#3a4a63", "#6b7a92", "#a9b4c7"] },
+      "plate": { "role": "neutral", "displayName": "Plate Navy", "canonical": "#16233d", "tonalRamp": ["#05080f", "#0a1021", "#111a30", "#16233d", "#24374f", "#3a4a63", "#6b7a92", "#a9b4c7"] },
+      "chart": { "role": "neutral", "displayName": "Chart Blue", "canonical": "#24374f", "tonalRamp": ["#0a1021", "#111a30", "#16233d", "#24374f", "#3a4a63", "#55667f", "#7d8ca3", "#a9b4c7"] },
+      "fog": { "role": "neutral", "displayName": "Fog", "canonical": "#3a4a63", "tonalRamp": ["#111a30", "#16233d", "#24374f", "#3a4a63", "#55667f", "#7d8ca3", "#a9b4c7", "#d4dae4"] },
+      "dust": { "role": "neutral", "displayName": "Stardust", "canonical": "#f2e2c9", "tonalRamp": ["#3a2f20", "#5f4f38", "#857257", "#ab977a", "#cfbb9e", "#e3cfb2", "#f2e2c9", "#fbf4e9"] },
+      "quiet": { "role": "neutral", "displayName": "Slate Quiet", "canonical": "#a9b4c7", "tonalRamp": ["#1e2533", "#353f52", "#4f5a6f", "#6b778c", "#8a96aa", "#a9b4c7", "#c9d0dc", "#e8ecf1"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Wordmark", "purpose": "The Hestia wordmark in the top bar. EB Garamond italic, self-hosted woff2 (OFL)." },
+      "headline": { "displayName": "Deal Name", "purpose": "The selected deal's address heading on the deal plate." },
+      "section": { "displayName": "Lane Heading", "purpose": "Lane headings such as New from auctions and My pipeline, with a quiet tabular count beside." },
+      "title": { "displayName": "Star Name", "purpose": "Italic names: index addresses (1.125rem), factor and pipeline names (1.05rem), chart star names and value-line labels (15px)." },
+      "body": { "displayName": "Body", "purpose": "All running text and figures; tabular numerals throughout." },
+      "label": { "displayName": "Label", "purpose": "Form labels, place lines, factor notes (max 60ch), off-chart note." },
+      "caption": { "displayName": "Caption", "purpose": "Table column heads, coordinate terms, bid-basis captions; chart ticks and legend at 11px." }
+    },
+    "shadows": [
+      { "name": "sheet-lift", "value": "0 -12px 32px rgb(0 0 0 / 0.45)", "purpose": "Phone bottom sheet only, over the scrim rgb(5 8 18 / 0.6)." },
+      { "name": "star-glow", "value": "radialGradient #f2e2c9 0.4 → 0 opacity, radius max(2.6r, 8px)", "purpose": "Soft halo behind every scored star in the sky chart (SVG, not box-shadow)." }
+    ],
+    "motion": [
+      { "name": "ease-out", "value": "cubic-bezier(0.23, 1, 0.32, 1)", "purpose": "Default for control state changes (160ms), row hover (140ms), plate settle (200ms), reticle lock (220ms)." },
+      { "name": "ease-drawer", "value": "cubic-bezier(0.32, 0.72, 0, 1)", "purpose": "Phone bottom sheet slide (260ms)." },
+      { "name": "press", "value": "scale(0.97) 160ms", "purpose": "Button and summary press feedback." },
+      { "name": "reticle-lock", "value": "opacity 0 + scale(1.6) → rest, 220ms ease-out", "purpose": "Red reticle locking onto the selected star." },
+      { "name": "reduced-motion", "value": "prefers-reduced-motion: reduce", "purpose": "Disables all animation, press scale, and the sheet transition." }
+    ],
+    "breakpoints": [
+      { "name": "chart-narrow", "value": "560px (chart width)", "purpose": "Chart crops to brightest stars, 1×/2× tags, two names, three-step legend." },
+      { "name": "phone", "value": "860px", "purpose": "Single column, stacked bar, bottom sheet." },
+      { "name": "index-compact", "value": "1100px", "purpose": "Index drops the roll ÷ bid column." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Night-vision red action: Collect sales, Watch this deal. One per decision group.",
+      "html": "<button class=\"ds-btn-primary\">Watch this deal</button>",
+      "css": ".ds-btn-primary { min-height: 44px; padding: 0.55rem 0.95rem; border: 1px solid var(--red, #ff4d2e); border-radius: 6px; background: var(--red, #ff4d2e); color: var(--sky, #0a1021); font: 600 0.9375rem \"Avenir Next\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif; cursor: pointer; transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1), border-color 160ms cubic-bezier(0.23, 1, 0.32, 1), transform 160ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-btn-primary:hover { background: #ff6a4f; border-color: #ff6a4f; } .ds-btn-primary:focus-visible { outline: 2px solid var(--red, #ff4d2e); outline-offset: 2px; } .ds-btn-primary:active { transform: scale(0.97); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Indigo button for every non-primary action: Score unchecked, Pass, Close.",
+      "html": "<button class=\"ds-btn\">Pass</button>",
+      "css": ".ds-btn { min-height: 44px; padding: 0.55rem 0.95rem; border: 1px solid var(--chart, #24374f); border-radius: 6px; background: var(--indigo, #111a30); color: var(--dust, #f2e2c9); font: 400 0.9375rem \"Avenir Next\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif; cursor: pointer; transition: border-color 160ms cubic-bezier(0.23, 1, 0.32, 1), transform 160ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-btn:hover { border-color: var(--quiet, #a9b4c7); } .ds-btn:focus-visible { outline: 2px solid var(--red, #ff4d2e); outline-offset: 2px; } .ds-btn:active { transform: scale(0.97); }"
+    },
+    {
+      "name": "Toggle Summary",
+      "kind": "button",
+      "refersTo": "button-toggle",
+      "description": "Transparent disclosure toggle for Filter and Add a deal by hand.",
+      "html": "<button class=\"ds-toggle\">Filter</button>",
+      "css": ".ds-toggle { min-height: 44px; padding: 0.55rem 0.95rem; border: 1px solid var(--chart, #24374f); border-radius: 6px; background: transparent; color: var(--quiet, #a9b4c7); font: 400 0.875rem \"Avenir Next\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif; cursor: pointer; transition: border-color 160ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-toggle:hover, .ds-toggle[aria-expanded=\"true\"] { border-color: var(--quiet, #a9b4c7); color: var(--dust, #f2e2c9); } .ds-toggle:focus-visible { outline: 2px solid var(--red, #ff4d2e); outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Night-sky well with a quiet label above; amber border on focus.",
+      "html": "<label class=\"ds-field\">Max bid<input class=\"ds-input\" value=\"50000\"></label>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 0.3rem; font: 400 0.8125rem \"Avenir Next\", -apple-system, sans-serif; color: var(--quiet, #a9b4c7); max-width: 14rem; } .ds-input { min-height: 44px; padding: 0.5rem 0.6rem; border: 1px solid var(--chart, #24374f); border-radius: 6px; background: var(--sky, #0a1021); color: var(--dust, #f2e2c9); font: 400 0.9375rem \"Avenir Next\", -apple-system, sans-serif; caret-color: var(--amber, #ffb36b); transition: border-color 160ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-input:focus { border-color: var(--amber, #ffb36b); outline: none; }"
+    },
+    {
+      "name": "Top Bar",
+      "kind": "nav",
+      "refersTo": "",
+      "description": "Wordmark with red four-point star, quiet tabular counts, actions; hairline below.",
+      "html": "<header class=\"ds-bar\"><span class=\"ds-mark\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 1.5 13.6 10.4 22.5 12 13.6 13.6 12 22.5 10.4 13.6 1.5 12 10.4 10.4Z\"/></svg>Hestia</span><span class=\"ds-counts\">98 new · 98 scored · <a href=\"#\">0 in pipeline</a></span><button class=\"ds-bar-btn\">Collect sales</button></header>",
+      "css": ".ds-bar { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.5rem 1.5rem; padding: 1rem 1.5rem; border-bottom: 1px solid var(--chart, #24374f); background: var(--sky, #0a1021); color: var(--dust, #f2e2c9); font-family: \"Avenir Next\", -apple-system, sans-serif; } .ds-mark { display: flex; align-items: center; gap: 0.5rem; font: italic 400 1.85rem/1 \"EB Garamond\", \"Iowan Old Style\", Georgia, serif; } .ds-mark svg { width: 1.1rem; height: 1.1rem; fill: var(--red, #ff4d2e); } .ds-counts { color: var(--quiet, #a9b4c7); font-variant-numeric: tabular-nums; } .ds-counts a { color: var(--dust, #f2e2c9); text-decoration-color: var(--fog, #3a4a63); text-underline-offset: 0.2em; } .ds-bar-btn { min-height: 44px; padding: 0.55rem 0.95rem; border: 1px solid var(--red, #ff4d2e); border-radius: 6px; background: var(--red, #ff4d2e); color: var(--sky, #0a1021); font-weight: 600; cursor: pointer; } .ds-bar-btn:hover { background: #ff6a4f; border-color: #ff6a4f; } .ds-bar-btn:focus-visible { outline: 2px solid var(--red, #ff4d2e); outline-offset: 2px; }"
+    },
+    {
+      "name": "Index Row",
+      "kind": "custom",
+      "refersTo": "index-row-selected",
+      "description": "Ranked index row: magnitude dot and score, italic address with place line, tabular figures. Selected row is plate navy with a red address.",
+      "html": "<table class=\"ds-index\"><tbody><tr class=\"ds-row\" aria-current=\"true\"><td class=\"ds-score\"><span class=\"ds-mag\" style=\"--d:12.6px\"></span>6</td><td><a href=\"#\" class=\"ds-prop\">2751 NW 25 Street</a><span class=\"ds-where\">Fort Lauderdale 33311</span></td><td class=\"ds-num\">$22,583.80</td></tr><tr class=\"ds-row\"><td class=\"ds-score\"><span class=\"ds-mag\" style=\"--d:12.6px\"></span>6</td><td><a href=\"#\" class=\"ds-prop\">908 NE 17 Ter #1-6</a><span class=\"ds-where\">Fort Lauderdale 33304</span></td><td class=\"ds-num\">$73,422.30</td></tr></tbody></table>",
+      "css": ".ds-index { width: 100%; border-collapse: collapse; background: var(--sky, #0a1021); color: var(--dust, #f2e2c9); font: 400 0.9375rem/1.45 \"Avenir Next\", -apple-system, sans-serif; } .ds-index td { padding: 0.6rem; border-bottom: 1px solid var(--indigo, #111a30); vertical-align: middle; } .ds-row { cursor: pointer; transition: background-color 140ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-row:hover { background: var(--indigo, #111a30); } .ds-row[aria-current=\"true\"] { background: var(--plate, #16233d); } .ds-row[aria-current=\"true\"] .ds-prop { color: var(--red, #ff4d2e); } .ds-prop { color: var(--dust, #f2e2c9); font: italic 400 1.125rem \"EB Garamond\", \"Iowan Old Style\", Georgia, serif; text-decoration: none; } .ds-prop:focus-visible { outline: 2px solid var(--red, #ff4d2e); outline-offset: 2px; } .ds-where { display: block; color: var(--quiet, #a9b4c7); font-size: 0.8125rem; } .ds-score { width: 4.5rem; white-space: nowrap; font-variant-numeric: tabular-nums; } .ds-mag { display: inline-block; width: var(--d); height: var(--d); margin-right: 0.45rem; border-radius: 50%; background: var(--dust, #f2e2c9); vertical-align: middle; } .ds-num { text-align: right; font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Deal Plate",
+      "kind": "card",
+      "refersTo": "deal-plate",
+      "description": "The selected deal: italic headline, amber place line, coordinate block between hairlines, decision row, factor magnitudes with pips.",
+      "html": "<article class=\"ds-plate\"><h2 class=\"ds-name\">2751 NW 25 Street</h2><p class=\"ds-place\">Fort Lauderdale 33311 · Broward tax deed</p><dl class=\"ds-coords\"><div><dt>Opening bid</dt><dd>$22,583.80</dd></div><div><dt>Roll ÷ bid</dt><dd>17.9×</dd></div></dl><ol class=\"ds-factors\"><li><span class=\"ds-factor\">Resale value</span><span class=\"ds-pips\"><span class=\"ds-pip on\"></span><span class=\"ds-pip on\"></span></span><span class=\"ds-note\">State roll and county appraiser agree.</span></li><li><span class=\"ds-factor\">Legal</span><span class=\"ds-pips\"><span class=\"ds-pip\"></span><span class=\"ds-pip\"></span></span><span class=\"ds-note\">The court docket was not read.</span></li></ol></article>",
+      "css": ".ds-plate { max-width: 27rem; padding: 1.25rem; border: 1px solid var(--chart, #24374f); border-radius: 3px; background: var(--plate, #16233d); color: var(--dust, #f2e2c9); font: 400 0.9375rem/1.45 \"Avenir Next\", -apple-system, sans-serif; } .ds-name { margin: 0; font: italic 400 2rem/1.05 \"EB Garamond\", \"Iowan Old Style\", Georgia, serif; } .ds-place { margin: 0.25rem 0 0; color: var(--amber, #ffb36b); font-size: 0.8125rem; } .ds-coords { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem 1rem; margin: 1.25rem 0; padding: 0.9rem 0; border-block: 1px solid var(--chart, #24374f); } .ds-coords dt { color: var(--quiet, #a9b4c7); font-size: 0.75rem; } .ds-coords dd { margin: 0.1rem 0 0; font-variant-numeric: tabular-nums; } .ds-factors { list-style: none; margin: 0; padding: 0; } .ds-factors li { display: grid; grid-template-columns: 1fr auto; gap: 0.15rem 1rem; padding: 0.55rem 0; border-top: 1px solid var(--chart, #24374f); } .ds-factor { font: italic 400 1.05rem \"EB Garamond\", \"Iowan Old Style\", Georgia, serif; } .ds-pips { display: flex; align-items: center; gap: 0.3rem; } .ds-pip { width: 9px; height: 9px; border-radius: 50%; border: 1px solid var(--quiet, #a9b4c7); } .ds-pip.on { background: var(--dust, #f2e2c9); border-color: var(--dust, #f2e2c9); } .ds-note { grid-column: 1 / -1; color: var(--quiet, #a9b4c7); font-size: 0.8125rem; max-width: 60ch; }"
+    },
+    {
+      "name": "Sky Chart",
+      "kind": "custom",
+      "refersTo": "sky-box",
+      "description": "Signature: log bid against log tax roll, amber 1× value line, stars sized by score with glow, italic star name, red reticle on the selected star.",
+      "html": "<div class=\"ds-sky\"><svg viewBox=\"0 0 360 220\" aria-hidden=\"true\"><defs><radialGradient id=\"ds-glow\"><stop offset=\"0\" stop-color=\"#f2e2c9\" stop-opacity=\"0.4\"/><stop offset=\"1\" stop-color=\"#f2e2c9\" stop-opacity=\"0\"/></radialGradient></defs><line class=\"ds-grid\" x1=\"40\" x2=\"40\" y1=\"10\" y2=\"190\"/><line class=\"ds-grid\" x1=\"160\" x2=\"160\" y1=\"10\" y2=\"190\"/><line class=\"ds-grid\" x1=\"280\" x2=\"280\" y1=\"10\" y2=\"190\"/><line class=\"ds-grid\" x1=\"40\" x2=\"350\" y1=\"70\" y2=\"70\"/><line class=\"ds-grid\" x1=\"40\" x2=\"350\" y1=\"150\" y2=\"150\"/><text class=\"ds-tick\" x=\"160\" y=\"208\" text-anchor=\"middle\">$10K</text><text class=\"ds-tick\" x=\"280\" y=\"208\" text-anchor=\"middle\">$100K</text><line class=\"ds-line\" x1=\"40\" y1=\"190\" x2=\"350\" y2=\"20\"/><text class=\"ds-line-label\" x=\"230\" y=\"120\" transform=\"rotate(-28.7 230 120)\">worth what it costs</text><circle cx=\"110\" cy=\"60\" r=\"16\" fill=\"url(#ds-glow)\"/><circle class=\"ds-star\" cx=\"110\" cy=\"60\" r=\"6.3\"/><circle cx=\"200\" cy=\"90\" r=\"10\" fill=\"url(#ds-glow)\"/><circle class=\"ds-star\" cx=\"200\" cy=\"90\" r=\"3.9\"/><circle class=\"ds-star\" cx=\"300\" cy=\"150\" r=\"2.7\"/><text class=\"ds-name\" x=\"124\" y=\"65\">2751 NW 25 Street</text><g class=\"ds-reticle\"><circle cx=\"110\" cy=\"60\" r=\"13.3\"/><line x1=\"123.3\" y1=\"60\" x2=\"130.3\" y2=\"60\"/><line x1=\"96.7\" y1=\"60\" x2=\"89.7\" y2=\"60\"/><line x1=\"110\" y1=\"73.3\" x2=\"110\" y2=\"80.3\"/><line x1=\"110\" y1=\"46.7\" x2=\"110\" y2=\"39.7\"/></g></svg></div>",
+      "css": ".ds-sky { width: 360px; height: 220px; border: 1px solid var(--chart, #24374f); border-radius: 3px; background: var(--indigo, #111a30); overflow: hidden; } .ds-sky svg { display: block; width: 100%; height: 100%; } .ds-grid { stroke: var(--chart, #24374f); stroke-width: 1; opacity: 0.55; } .ds-tick { fill: var(--quiet, #a9b4c7); font: 11px \"Avenir Next\", -apple-system, sans-serif; font-variant-numeric: tabular-nums; } .ds-line { stroke: var(--amber, #ffb36b); stroke-width: 1; stroke-dasharray: 2 5; opacity: 0.7; } .ds-line-label { fill: var(--amber, #ffb36b); font: italic 15px \"EB Garamond\", Georgia, serif; } .ds-star { fill: var(--dust, #f2e2c9); stroke: var(--indigo, #111a30); stroke-width: 1; cursor: pointer; transition: stroke 160ms; } .ds-star:hover { stroke: var(--red, #ff4d2e); stroke-width: 2; } .ds-name { fill: var(--dust, #f2e2c9); font: italic 15px \"EB Garamond\", Georgia, serif; } .ds-reticle { fill: none; stroke: var(--red, #ff4d2e); stroke-width: 1.5; transform-box: fill-box; transform-origin: center; animation: ds-lock 220ms cubic-bezier(0.23, 1, 0.32, 1); } @keyframes ds-lock { from { opacity: 0; transform: scale(1.6); } } @media (prefers-reduced-motion: reduce) { .ds-reticle { animation: none; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Night Desk Atlas",
+    "overview": "Hestia is an operator's instrument read at night: a navy sky with indigo plates, chalk-colored stardust text, and one star chart that carries the whole argument. Each deal is a star. Position is opening bid (x, log) against tax roll value (y, log); size is score. Two dashed amber lines mark \"worth what it costs\" (1×) and \"worth twice the bid\" (2×), so the deals worth a look are the bright stars far above them. Everything else on the screen is a standard, dense operating surface — a ranked index and a deal plate — that borrows the atlas's palette, italic naming, and hairline rules without borrowing its theatrics.\n\nThe register is Operate. The world lends palette, type, density, and one signature move (the sky chart with its red reticle); buttons, inputs, tables, and the phone sheet remain ordinary, legible controls. Density is high and calm: hairline 1px rules instead of cards, tabular figures for every number, and no decoration that does not carry data.",
+    "keyCharacteristics": [
+      "Dark, flat navy ground; depth by tonal step (sky → indigo → plate), not shadow.",
+      "One night-vision red for the selected deal and every primary action; amber for annotations only.",
+      "EB Garamond italic names things (properties, factors, headings, chart labels); a system sans with tabular figures carries every number.",
+      "Score is a magnitude: dot diameter grows with score on a fixed ramp, in the chart, the index, and the plate.",
+      "Hairline chart-blue rules divide everything; panels have barely-there 3px corners."
+    ],
+    "rules": [
+      { "name": "The One Red Rule", "body": "Red means \"this one\" or \"do this\": the selected deal and the primary action. A screen holds one reticle and at most one red button per decision group. Do not use red for status, warnings, or decoration.", "section": "colors" },
+      { "name": "The Amber Annotates Rule", "body": "Amber is the chart's pencil: lines, labels, notes, rings, focus borders. It never fills a control.", "section": "colors" },
+      { "name": "The Italic Names Rule", "body": "Serif italic is for names — of places, deals, factors, lanes, and chart lines. Numbers are never set in the serif.", "section": "typography" },
+      { "name": "The Tabular Figures Rule", "body": "Every number (money, dates, ratios, counts, parcels, scores) uses tabular figures and right-aligns in tables.", "section": "typography" },
+      { "name": "The Tonal Step Rule", "body": "To raise something, move it one navy step lighter; do not add a shadow. Shadows are reserved for surfaces that physically overlay the page (the sheet).", "section": "elevation" }
+    ],
+    "dos": [
+      "Do size every score as a magnitude dot on the fixed ramp — chart radius 1.5 + score × 0.8 × scale, index and plate dot 3 + score × 1.6px — so the same score looks equally bright everywhere.",
+      "Do use the serif only in italic, only for names; set every figure in tabular sans.",
+      "Do divide with 1px chart-blue hairlines and raise with a lighter navy step.",
+      "Do keep controls standard and 44px tall; the atlas lives in the chart, not in the buttons.",
+      "Do honor reduced motion: no animations, no press scale, no sheet transition."
+    ],
+    "donts": [
+      "Don't use red for anything but the selected deal, the primary action, focus, and errors.",
+      "Don't fill controls or panels with amber.",
+      "Don't add shadows to panels or cards; only the phone sheet lifts.",
+      "Don't put chart stars in the tab order; the index links are the keyboard route.",
+      "Don't fall back to colored score pills or a grey table; score is shown as dot size."
+    ]
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "Hestia",
+    "slug": "hestia",
+    "scheme": "hestia",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0a1021",
+    "android": {
+      "package": "com.hestia.trading",
+      "adaptiveIcon": {
+        "backgroundColor": "#0a1021",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0a1021",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 120
+        }
+      ]
+    ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "experiments": {
+      "typedRoutes": false
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "c1dbcc46-8e41-47af-969c-c43f714acbe3"
+      }
+    },
+    "owner": "daykelm",
+    "updates": {
+      "url": "https://u.expo.dev/c1dbcc46-8e41-47af-969c-c43f714acbe3"
+    },
+    "ios": {}
+  }
+}

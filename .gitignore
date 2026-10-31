@@ -3,3 +3,10 @@ __pycache__/
 data/*.db
 .DS_Store
 .cursor/
+.tools/
+android/build/
+android/*.keystore
+static/hestia.apk
+static/hestia-native.apk
+tunnel.env
+.env

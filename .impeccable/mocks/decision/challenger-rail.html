@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Hestia · Centre rail</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1440px;height:900px;overflow:hidden}
+body{background:#f1ece1;color:#17150f;font:17px/1.5 "Iowan Old Style",Palatino,Georgia,serif}
+header{display:flex;align-items:baseline;gap:28px;padding:22px 48px;border-bottom:1px solid #17150f}
+header h1{font-size:28px;font-weight:600;letter-spacing:.02em}
+header .meta{font-variant:small-caps;letter-spacing:.06em;font-size:15px}
+header .act{margin-left:auto;display:flex;gap:10px}
+button{font:600 14px/1 "Avenir Next",Arial,sans-serif;height:44px;padding:0 16px;border:1px solid #17150f;background:#17150f;color:#f1ece1}
+button.o{background:transparent;color:#17150f}
+.page{display:grid;grid-template-columns:1fr 74px 1fr 360px;padding:20px 48px;gap:0}
+.colhead{font-variant:small-caps;letter-spacing:.08em;font-size:15px;border-bottom:1px solid #17150f;padding-bottom:6px;margin-bottom:6px}
+.item{height:58px;border-bottom:1px solid #cfc6b4;padding:8px 14px 0 0}
+.item b{font-weight:600;font-size:16px}
+.item small{display:block;font-size:13px;color:#5b5446;font-family:"Avenir Next",Arial,sans-serif;font-variant-numeric:tabular-nums}
+.right .item{padding:8px 0 0 14px}
+.rail{border-left:1px solid #17150f;border-right:1px solid #17150f}
+.rail .colhead{text-align:center}
+.key{height:58px;border-bottom:1px solid #cfc6b4;display:grid;place-items:center;color:#c8341f;font-weight:700;font-size:26px;font-variant-numeric:tabular-nums}
+.key.sel{background:#c8341f;color:#f1ece1}
+.empty{color:#5b5446;font-style:italic;padding:14px 0 0 14px}
+.margin{padding-left:32px}
+.note{border-top:1px solid #17150f;padding:10px 0;font-size:14px;font-family:"Avenir Next",Arial,sans-serif}
+.note .k{color:#c8341f;font-weight:700}
+.big{font-size:40px;color:#c8341f;line-height:1}
+</style></head><body>
+<header><h1>Hestia</h1><span class="meta">98 deals · 33 sell today · Broward, Miami-Dade, Lee</span><div class="act"><button class="o">Score unchecked</button><button>Collect South Florida</button></div></header>
+<div class="page">
+  <div>
+    <p class="colhead">New from auctions</p>
+    <div class="item"><b>908 NE 17 TER #1-6</b><small>Fort Lauderdale · tax deed Nov 23 · bid $73,422 · roll $978,420</small></div>
+    <div class="item"><b>1278 SE 7 COURT</b><small>Deerfield Beach · tax deed Nov 23 · bid $57,818 · roll $656,930</small></div>
+    <div class="item"><b>2120 NE 62 CT</b><small>Fort Lauderdale · tax deed Nov 23 · bid $75,572 · roll $600,280</small></div>
+    <div class="item"><b>1865 S OCEAN DRIVE</b><small>Hallandale Beach · tax deed Nov 23 · bid $41,399 · roll $336,600</small></div>
+    <div class="item"><b>1367 NW 21 ST</b><small>Miami · tax deed Nov 12 · bid $38,261 · roll $886,213</small></div>
+    <div class="item"><b>8116 PENNY DR</b><small>Lee · foreclosure today · judgment $91,267 · roll $134,043</small></div>
+    <div class="item"><b>1029 NW 35TH PL</b><small>Lee · foreclosure today · judgment $474,217 · roll $334,061</small></div>
+    <div class="item"><b>1612 SW 13TH TER</b><small>Lee · foreclosure today · judgment $630,481 · roll $381,026</small></div>
+  </div>
+  <div class="rail">
+    <p class="colhead">Score</p>
+    <div class="key sel">6</div><div class="key">6</div><div class="key">6</div><div class="key">6</div><div class="key">4</div><div class="key">4</div><div class="key">3</div><div class="key">3</div>
+  </div>
+  <div class="right">
+    <p class="colhead" style="padding-left:14px">My pipeline</p>
+    <p class="empty">Nothing watched yet. Pick a deal on the left and watch it.</p>
+  </div>
+  <div class="margin">
+    <p class="big">6</p>
+    <p style="font-weight:600;margin:4px 0 10px">908 NE 17 TER #1-6</p>
+    <p class="note"><span class="k">Value 2</span> Florida DOR roll and Broward appraiser both say $978,420.</p>
+    <p class="note"><span class="k">Comps 2</span> Recent qualified sales in the subdivision support the gap.</p>
+    <p class="note"><span class="k">Occupancy 2</span> No homestead on either roll. Not proof it is empty.</p>
+    <p class="note"><span class="k">Legal 0</span> Case 53985. The docket was not read.</p>
+    <p class="note"><span class="k">Liens 0</span> No public lien feed answered.</p>
+    <div style="display:flex;gap:8px;margin-top:14px"><button>Watch</button><button class="o">Pass</button></div>
+  </div>
+</div>
+</body></html>

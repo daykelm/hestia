@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Hestia · Plat Book</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1440px;height:900px;overflow:hidden}
+body{background:#fbfaf6;color:#1b1b1b;font:15px/1.4 "Avenir Next","Helvetica Neue",Arial,sans-serif;display:grid;grid-template-columns:220px 1fr 420px}
+nav{background:#1f4e9c;color:#fff;padding:24px 20px}
+nav .brand{font-size:26px;font-weight:700;letter-spacing:.02em}
+nav .sec{margin-top:28px;font-size:12px;text-transform:uppercase;letter-spacing:.1em;opacity:.7}
+nav a{display:flex;justify-content:space-between;padding:10px 0;color:#fff;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.18)}
+nav a.on{font-weight:700}
+nav button{margin-top:24px;width:100%;height:44px;background:#f2a7a0;color:#1b1b1b;border:0;font:inherit;font-weight:700}
+main{padding:24px 32px;overflow:hidden;border-right:1px solid #1b1b1b}
+.top{display:flex;align-items:baseline;justify-content:space-between}
+h1{font-size:26px;font-weight:600}
+.top span{color:#555}
+.plat{margin-top:16px;display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid #1b1b1b;border-left:1px solid #1b1b1b}
+.lot{border-right:1px solid #1b1b1b;border-bottom:1px solid #1b1b1b;padding:12px 12px 14px;height:178px;position:relative;background:#fff}
+.lot .no{font-size:11px;color:#1f4e9c;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.lot .score{position:absolute;right:12px;top:10px;border-radius:50%;background:#1f4e9c;color:#fff;font-weight:700;display:grid;place-items:center}
+.d6{width:42px;height:42px;font-size:20px}.d4{width:34px;height:34px;font-size:16px}.d3{width:30px;height:30px;font-size:14px}
+.lot b{display:block;margin-top:18px;font-size:15px}
+.lot small{color:#555}
+.lot .nums{position:absolute;left:12px;right:12px;bottom:12px;display:flex;justify-content:space-between;font-variant-numeric:tabular-nums;font-size:14px}
+.lot.sel{background:#fde3df;outline:3px solid #d7493c;outline-offset:-3px;z-index:1}
+aside{padding:24px 28px;background:#fff}
+aside h2{font-size:20px;font-weight:600}
+.row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #ddd;font-variant-numeric:tabular-nums}
+.label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#555;margin-top:20px}
+.src{font-size:14px;padding:8px 0;border-bottom:1px dashed #bbb}
+.src b{color:#1f4e9c}
+.pipe{margin-top:22px;padding:14px;border:1px solid #1b1b1b}
+.pipe p{color:#555;font-size:14px;margin-top:6px}
+</style></head><body>
+<nav>
+  <div class="brand">Hestia</div>
+  <div class="sec">Book</div>
+  <a class="on" href="#">New from auctions <span>98</span></a>
+  <a href="#">My pipeline <span>0</span></a>
+  <div class="sec">County</div>
+  <a href="#">Broward <span>31</span></a>
+  <a href="#">Miami-Dade <span>39</span></a>
+  <a href="#">Lee <span>21</span></a>
+  <button>Collect South Florida</button>
+</nav>
+<main>
+  <div class="top"><h1>New from auctions</h1><span>Best score first · 33 sell today</span></div>
+  <div class="plat">
+    <div class="lot sel"><span class="no">494234-05-8750</span><span class="score d6">6</span><b>908 NE 17 TER #1-6</b><small>Fort Lauderdale · tax deed · Nov 23</small><div class="nums"><span>Bid $73,422</span><span>Roll $978,420</span></div></div>
+    <div class="lot"><span class="no">484305-10-0390</span><span class="score d6">6</span><b>1278 SE 7 COURT</b><small>Deerfield Beach · tax deed · Nov 23</small><div class="nums"><span>Bid $57,818</span><span>Roll $656,930</span></div></div>
+    <div class="lot"><span class="no">494212-07-2340</span><span class="score d6">6</span><b>2120 NE 62 CT</b><small>Fort Lauderdale · tax deed · Nov 23</small><div class="nums"><span>Bid $75,572</span><span>Roll $600,280</span></div></div>
+    <div class="lot"><span class="no">514226-CG-1060</span><span class="score d6">6</span><b>1865 S OCEAN DRIVE</b><small>Hallandale Beach · tax deed · Nov 23</small><div class="nums"><span>Bid $41,399</span><span>Roll $336,600</span></div></div>
+    <div class="lot"><span class="no">01-3126-047-0090</span><span class="score d4">4</span><b>1367 NW 21 ST</b><small>Miami · tax deed · Nov 12</small><div class="nums"><span>Bid $38,261</span><span>Roll $886,213</span></div></div>
+    <div class="lot"><span class="no">LEE 8116 PENNY</span><span class="score d4">4</span><b>8116 PENNY DR</b><small>Lee · foreclosure · today</small><div class="nums"><span>Judgment $91,267</span><span>Roll $134,043</span></div></div>
+    <div class="lot"><span class="no">LEE 1029 NW 35</span><span class="score d3">3</span><b>1029 NW 35TH PL</b><small>Lee · foreclosure · today</small><div class="nums"><span>Judgment $474,217</span><span>Roll $334,061</span></div></div>
+    <div class="lot"><span class="no">LEE 1612 SW 13</span><span class="score d3">3</span><b>1612 SW 13TH TER</b><small>Lee · foreclosure · today</small><div class="nums"><span>Judgment $630,481</span><span>Roll $381,026</span></div></div>
+  </div>
+</main>
+<aside>
+  <h2>908 NE 17 TER #1-6</h2>
+  <div class="row"><span>Score</span><b>6 of 10</b></div>
+  <div class="row"><span>Opening bid</span><b>$73,422</b></div>
+  <div class="row"><span>Tax roll value</span><b>$978,420</b></div>
+  <p class="label">What the records said</p>
+  <p class="src"><b>Value 2</b> · Florida DOR roll and Broward appraiser agree.</p>
+  <p class="src"><b>Comps 2</b> · Recent qualified sales in the subdivision.</p>
+  <p class="src"><b>Occupancy 2</b> · No homestead on either roll.</p>
+  <p class="src"><b>Legal 0 · Liens 0</b> · Not checked yet.</p>
+  <div class="pipe"><b>My pipeline is empty</b><p>Watch a deal to start working it.</p></div>
+</aside>
+</body></html>

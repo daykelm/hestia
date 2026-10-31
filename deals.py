@@ -5,14 +5,24 @@ import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
-STATUSES = (
-    "New",
-    "Watching",
-    "Under Contract",
-    "Assigned",
+STEPS = (
+    "Found",
+    "Researched",
+    "Title checked",
+    "Bid set",
+    "Won",
+    "Buyer assigned",
     "Closed",
-    "Dead",
 )
+STATUSES = STEPS + ("Passed",)
+LEGACY = {"New": "Found", "Watching": "Researched", "Under Contract": "Won", "Assigned": "Buyer assigned", "Dead": "Passed"}
+# What each step needs before a deal can enter it.
+STEP_FIELDS = {
+    "Title checked": ("title", "liens"),
+    "Bid set": ("max_bid",),
+    "Won": ("won_price",),
+    "Buyer assigned": ("buyer",),
+}
 
 # shortcut: money is a float, switch to integer cents if these numbers are ever summed into a ledger
 # shortcut: sort in Python, move into SQL if one list passes a few thousand rows
@@ -45,6 +55,8 @@ def connect(path):
     if "dedupe_key" not in columns:
         conn.execute("ALTER TABLE deals ADD COLUMN dedupe_key TEXT")
     conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS deals_dedupe ON deals(dedupe_key)")
+    for old, new in LEGACY.items():
+        conn.execute("UPDATE deals SET status = ? WHERE status = ?", (new, old))
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS media (
@@ -84,6 +96,7 @@ def _now():
 
 
 def _clean_status(status):
+    status = LEGACY.get(status, status)
     if status not in STATUSES:
         raise ValueError("Pick a status from the list.")
     return status
@@ -93,7 +106,7 @@ def add_deal(conn, *, address, location, price, estimated_value, source, notes, 
     address = (address or "").strip()
     if not address:
         raise ValueError("Add an address.")
-    status = _clean_status(status or "New")
+    status = _clean_status(status or "Found")
     now = _now()
     cur = conn.execute(
         """
@@ -128,13 +141,15 @@ def upsert_listing(conn, listing):
         raise ValueError("Add an address.")
     metadata = listing.get("metadata") or {}
     now = _now()
-    existing = conn.execute("SELECT id, metadata FROM deals WHERE dedupe_key = ?", (key,)).fetchone()
+    existing = conn.execute("SELECT id, price, metadata FROM deals WHERE dedupe_key = ?", (key,)).fetchone()
     if existing:
         merged = {}
         try:
             merged = json.loads(existing["metadata"] or "{}")
         except json.JSONDecodeError:
             merged = {}
+        if existing["price"] != listing.get("price") or merged.get("sale_date") != metadata.get("sale_date"):
+            merged.pop("diligence", None)
         merged.update(metadata)
         conn.execute(
             """
@@ -161,7 +176,7 @@ def upsert_listing(conn, listing):
             INSERT INTO deals (
                 address, location, price, estimated_value, source, notes, link, status,
                 created_at, updated_at, metadata, dedupe_key
-            ) VALUES (?, ?, ?, NULL, ?, '', ?, 'New', ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, NULL, ?, '', ?, 'Found', ?, ?, ?, ?)
             """,
             (
                 address,
@@ -189,7 +204,116 @@ def upsert_listing(conn, listing):
     return state
 
 
+def _row_meta(conn, deal_id):
+    row = conn.execute("SELECT status, metadata FROM deals WHERE id = ?", (deal_id,)).fetchone()
+    if row is None:
+        raise ValueError("That deal is no longer on the list.")
+    try:
+        return row["status"], json.loads(row["metadata"] or "{}")
+    except json.JSONDecodeError:
+        return row["status"], {}
+
+
+def save_diligence(conn, deal_id, diligence, just_value=None, *, keep_roll=False):
+    """The tax roll value is stored beside the deal, not as its estimated value. It lags the market."""
+    status, meta = _row_meta(conn, deal_id)
+    meta["diligence"] = diligence
+    if not keep_roll:
+        meta["roll_value"] = just_value
+    conn.execute(
+        "UPDATE deals SET status = ?, metadata = ?, updated_at = ? WHERE id = ?",
+        ("Researched" if status == "Found" else status, json.dumps(meta, separators=(",", ":")), _now(), deal_id),
+    )
+    conn.commit()
+
+
+def allowed_moves(status, researched):
+    """Forward one step, back one step, or pass. Passed deals can be reopened."""
+    if status == "Passed":
+        return ["Researched" if researched else "Found"]
+    at = STEPS.index(status)
+    moves = []
+    if at + 1 < len(STEPS):
+        moves.append(STEPS[at + 1])
+    if at > 0:
+        moves.append(STEPS[at - 1])
+    if status not in ("Won", "Buyer assigned", "Closed"):
+        moves.append("Passed")
+    return moves
+
+
+def advance(conn, deal_id, to, data):
+    """Move a deal along the process. Entering a step stores what that step asks for."""
+    status, meta = _row_meta(conn, deal_id)
+    to = _clean_status(to)
+    if to not in allowed_moves(status, "diligence" in meta):
+        raise ValueError(f"A deal in {status} can't move to {to}.")
+    forward = to in STEPS and status in STEPS and STEPS.index(to) > STEPS.index(status)
+    if forward and to == "Researched" and "diligence" not in meta:
+        raise ValueError("Score this deal first. Researched means the public records were read.")
+    if forward:
+        for key in STEP_FIELDS.get(to, ()):
+            value = data.get(key)
+            if value in (None, "", False):
+                raise ValueError(_MISSING[key])
+            meta[key] = value
+        if to == "Buyer assigned" and data.get("fee") is not None:
+            meta["fee"] = data["fee"]
+    conn.execute(
+        "UPDATE deals SET status = ?, metadata = ?, updated_at = ? WHERE id = ?",
+        (to, json.dumps(meta, separators=(",", ":")), _now(), deal_id),
+    )
+    conn.commit()
+    return meta
+
+
+_MISSING = {
+    "title": "Tick the docket check once you have read the case.",
+    "liens": "Tick the lien check once you have searched liens and taxes owed.",
+    "max_bid": "Add the most you will bid.",
+    "won_price": "Add the price you won at.",
+    "buyer": "Add the buyer's name.",
+}
+
+
+def drop_past_sales(conn, today):
+    """Collected deals nobody moved past Researched go away once their sale day has passed."""
+    gone = []
+    for row in conn.execute("SELECT id, metadata FROM deals WHERE dedupe_key IS NOT NULL AND status IN ('Found', 'Researched')"):
+        try:
+            sale_day = json.loads(row["metadata"] or "{}").get("sale_date") or ""
+            when = datetime.strptime(sale_day, "%m/%d/%Y").date()
+        except (ValueError, json.JSONDecodeError):
+            continue
+        if when < today:
+            gone.append((row["id"],))
+    conn.executemany("DELETE FROM media WHERE deal_id = ?", gone)
+    conn.executemany("DELETE FROM deals WHERE id = ?", gone)
+    conn.commit()
+    return len(gone)
+
+
+def pending_scores(conn, limit, version=0, only=None):
+    """Deals with no score, or a score from an older version of the rules."""
+    rows = conn.execute("SELECT * FROM deals ORDER BY id").fetchall()
+    pending = []
+    for row in rows:
+        if only is not None and row["id"] != only:
+            continue
+        try:
+            meta = json.loads(row["metadata"] or "{}")
+        except json.JSONDecodeError:
+            meta = {}
+        if only is None and (meta.get("diligence") or {}).get("version", 1 if "diligence" in meta else -1) >= version:
+            continue
+        deal = dict(row)
+        deal["metadata"] = meta
+        pending.append(deal)
+    return pending[:limit], len(pending)
+
+
 def set_status(conn, deal_id, status):
+    """Direct move for hand-added deals and tests. The desk uses advance()."""
     status = _clean_status(status)
     cur = conn.execute(
         "UPDATE deals SET status = ?, updated_at = ? WHERE id = ?",
@@ -238,5 +362,12 @@ def list_deals(conn, *, status="", location="", source="", min_price=None, max_p
             deal["metadata"] = {}
         deal["media"] = media.get(deal["id"], [])
         deals.append(deal)
-    deals.sort(key=lambda deal: (deal["spread"] is None, -(deal["spread"] or 0), deal["address"].lower()))
+    deals.sort(
+        key=lambda deal: (
+            deal["spread"] is None,
+            -(deal["spread"] or 0),
+            -((deal["metadata"].get("diligence") or {}).get("score") or 0),
+            deal["address"].lower(),
+        )
+    )
     return deals

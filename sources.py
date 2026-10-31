@@ -9,6 +9,25 @@ from html import unescape
 
 # Broward and Lee split tax deeds and foreclosures. Miami-Dade publishes both on one calendar.
 # Collier tax deeds are in-person and are not on this auction system.
+_BID_HOST = {
+    ("Broward", "tax deed"): "https://broward.realtaxdeed.com",
+    ("Broward", "foreclosure"): "https://broward.realforeclose.com",
+    ("Miami-Dade", "tax deed"): "https://www.miamidade.realforeclose.com",
+    ("Miami-Dade", "foreclosure"): "https://www.miamidade.realforeclose.com",
+    ("Lee", "tax deed"): "https://lee.realtaxdeed.com",
+    ("Lee", "foreclosure"): "https://lee.realforeclose.com",
+}
+
+
+def bid_url(meta):
+    """The property page where a registered bidder enters a maximum. The county then bids up to it."""
+    aid = re.sub(r"\D", "", str((meta or {}).get("auction_id") or ""))
+    host = _BID_HOST.get(((meta or {}).get("county"), ((meta or {}).get("kind") or "").lower()))
+    if not aid or not host:
+        return ""
+    return f"{host}/index.cfm?zaction=auction&zmethod=details&AID={aid}"
+
+
 SITES = (
     {"county": "Broward", "host": "https://broward.realtaxdeed.com"},
     {"county": "Broward", "host": "https://broward.realforeclose.com"},
@@ -88,12 +107,17 @@ def parse_listings(html, *, county, kind, sale_date, page_url):
             media.append({"kind": "image", "url": src})
         for src in re.findall(r'<video[^>]+src="(https?://[^"]+)"', chunk, re.I):
             media.append({"kind": "video", "url": src})
+        opening = _money(fields.get("Opening Bid"))
+        judgment = _money(fields.get("Final Judgment Amount"))
+        # Foreclosures publish no opening bid. The judgment is what the lender can bid up to.
+        price = opening if opening is not None else judgment
+        basis = "opening bid" if opening is not None else "final judgment" if judgment is not None else ""
         listings.append(
             {
                 "dedupe_key": f"{county.lower()}|{parcel_key or address.lower()}",
                 "address": address,
                 "location": fields.get("city", ""),
-                "price": _money(fields.get("Opening Bid")),
+                "price": price,
                 "source": f"{county} {kind.lower()}",
                 "link": page_url,
                 "media": media,
@@ -106,6 +130,9 @@ def parse_listings(html, *, county, kind, sale_date, page_url):
                     "parcel": parcel,
                     "auction_id": aid,
                     "auction_type": fields.get("Auction Type", ""),
+                    "price_basis": basis,
+                    "final_judgment": judgment,
+                    "plaintiff_max_bid": fields.get("Plaintiff Max Bid", ""),
                 },
             }
         )

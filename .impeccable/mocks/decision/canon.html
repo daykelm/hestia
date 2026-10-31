@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Hestia · Standard</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1440px;height:900px;overflow:hidden}
+body{background:#f8fafc;color:#0f172a;font:14px/1.45 -apple-system,"Segoe UI",Arial,sans-serif;display:grid;grid-template-columns:232px 1fr}
+nav{background:#fff;border-right:1px solid #e2e8f0;padding:20px 14px}
+nav .brand{font-weight:700;font-size:18px;padding:0 10px 18px}
+nav a{display:flex;justify-content:space-between;padding:9px 10px;border-radius:6px;color:#334155;text-decoration:none}
+nav a.on{background:#eff6ff;color:#1d4ed8;font-weight:600}
+main{padding:24px 32px}
+.bar{display:flex;align-items:center;gap:12px}
+.bar h1{font-size:22px;font-weight:600;margin-right:auto}
+button{font:inherit;font-weight:600;height:40px;padding:0 14px;border-radius:6px;border:1px solid #cbd5e1;background:#fff}
+button.p{background:#2563eb;border-color:#2563eb;color:#fff}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:20px 0}
+.kpi{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px}
+.kpi span{color:#64748b;font-size:13px}.kpi b{display:block;font-size:26px;margin-top:2px}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{text-align:left;font-weight:500;color:#64748b;background:#f8fafc;padding:10px 14px;border-bottom:1px solid #e2e8f0}
+td{padding:11px 14px;border-bottom:1px solid #f1f5f9}
+.n{text-align:right}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-weight:600;font-size:12px}
+.g{background:#dcfce7;color:#166534}.y{background:#fef9c3;color:#854d0e}.r{background:#fee2e2;color:#991b1b}
+</style></head><body>
+<nav><div class="brand">Hestia</div><a class="on" href="#">New from auctions <span>98</span></a><a href="#">Pipeline <span>0</span></a><a href="#">Buyers <span>—</span></a></nav>
+<main>
+  <div class="bar"><h1>New from auctions</h1><button>Score unchecked</button><button class="p">Collect South Florida</button></div>
+  <div class="kpis"><div class="kpi"><span>Deals</span><b>98</b></div><div class="kpi"><span>Sell today</span><b>33</b></div><div class="kpi"><span>Scored 6</span><b>11</b></div><div class="kpi"><span>In pipeline</span><b>0</b></div></div>
+  <div class="card"><table>
+    <thead><tr><th>Score</th><th>Address</th><th>County</th><th>Sale</th><th class="n">Bid</th><th class="n">Tax roll</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td><span class="pill g">6</span></td><td>908 NE 17 TER #1-6</td><td>Broward</td><td>Nov 23</td><td class="n">$73,422</td><td class="n">$978,420</td><td>New</td></tr>
+      <tr><td><span class="pill g">6</span></td><td>1278 SE 7 COURT</td><td>Broward</td><td>Nov 23</td><td class="n">$57,818</td><td class="n">$656,930</td><td>New</td></tr>
+      <tr><td><span class="pill g">6</span></td><td>2120 NE 62 CT</td><td>Broward</td><td>Nov 23</td><td class="n">$75,572</td><td class="n">$600,280</td><td>New</td></tr>
+      <tr><td><span class="pill g">6</span></td><td>1865 S OCEAN DRIVE</td><td>Broward</td><td>Nov 23</td><td class="n">$41,399</td><td class="n">$336,600</td><td>New</td></tr>
+      <tr><td><span class="pill y">4</span></td><td>1367 NW 21 ST</td><td>Miami-Dade</td><td>Nov 12</td><td class="n">$38,261</td><td class="n">$886,213</td><td>New</td></tr>
+      <tr><td><span class="pill y">4</span></td><td>8116 PENNY DR</td><td>Lee</td><td>Today</td><td class="n">$91,267</td><td class="n">$134,043</td><td>New</td></tr>
+      <tr><td><span class="pill r">3</span></td><td>1029 NW 35TH PL</td><td>Lee</td><td>Today</td><td class="n">$474,217</td><td class="n">$334,061</td><td>New</td></tr>
+      <tr><td><span class="pill r">3</span></td><td>1612 SW 13TH TER</td><td>Lee</td><td>Today</td><td class="n">$630,481</td><td class="n">$381,026</td><td>New</td></tr>
+    </tbody></table></div>
+</main>
+</body></html>

@@ -10,6 +10,7 @@ services:
       - "18080:8080"
     environment:
       HESTIA_DB: /data/hestia.db
+      ATTOM_API_KEY: ${ATTOM_API_KEY:-}
     volumes:
       - ./data:/data
     mem_limit: 128m
@@ -22,6 +23,29 @@ services:
       driver: json-file
       options:
         max-size: "10m"
+        max-file: "2"
+
+  # Publishes hestia.trading through a Cloudflare Tunnel: outbound only, no router ports.
+  # Starts only with `--profile tunnel`, after tunnel.env holds TUNNEL_TOKEN and Cloudflare Access guards the hostname.
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: hestia-tunnel
+    profiles: ["tunnel"]
+    restart: unless-stopped
+    # http2 over TCP: QUIC streams over the home router dropped responses mid-page.
+    command: tunnel --no-autoupdate --protocol http2 run
+    env_file:
+      - ./tunnel.env
+    depends_on:
+      - hestia
+    mem_limit: 96m
+    cpus: 0.25
+    pids_limit: 64
+    read_only: true
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
         max-file: "2"
 
 networks:

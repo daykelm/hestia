@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Hestia · Bandit Sign</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1440px;height:900px;overflow:hidden}
+body{background:#ffffff;color:#121212;font:15px/1.35 "Avenir Next","Helvetica Neue",Arial,sans-serif}
+.cond{font-family:"Avenir Next Condensed","Arial Narrow",sans-serif;font-weight:800;letter-spacing:-.01em}
+header{background:#ffd400;height:96px;display:flex;align-items:center;gap:40px;padding:0 40px;border-bottom:4px solid #121212}
+.brand{font-size:54px;line-height:1;text-transform:uppercase}
+.stat{font-size:15px}.stat b{display:block;font-size:30px;line-height:1}
+.actions{margin-left:auto;display:flex;gap:10px}
+button{font:inherit;font-weight:700;border:2px solid #121212;background:#121212;color:#ffd400;padding:0 18px;height:44px}
+button.ghost{background:transparent;color:#121212}
+main{display:grid;grid-template-columns:1fr 400px;height:804px}
+.lane{padding:24px 40px;overflow:hidden}
+.lane h2{font-size:30px;text-transform:uppercase;line-height:1}
+.lane .sub{color:#555;margin:4px 0 14px}
+.tabs{display:flex;gap:6px;margin-bottom:12px}
+.tab{border:2px solid #121212;padding:6px 12px;font-weight:700;font-size:14px}
+.tab.on{background:#121212;color:#fff}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#555;padding:6px 8px;border-bottom:2px solid #121212}
+td{padding:9px 8px;border-bottom:1px solid #d9d7cf;vertical-align:middle}
+td.n{text-align:right}
+.score{width:70px}
+.score span{display:inline-block;font-family:"Avenir Next Condensed","Arial Narrow",sans-serif;font-weight:800;line-height:1}
+.s6{font-size:44px}.s5{font-size:40px}.s4{font-size:34px}.s3{font-size:28px}
+tr.sel{background:#ffd400}
+tr.sel td{border-bottom-color:#121212}
+tr.sel small,tr.sel .why{color:#121212}
+aside{background:#ececea}
+.addr b{display:block}.addr small{color:#555}
+.why{color:#333;font-size:13px}
+.tag{font-size:12px;font-weight:700;border:1.5px solid #121212;padding:1px 6px}
+.tag.red{background:#d7261e;color:#fff;border-color:#d7261e}
+aside{border-left:4px solid #121212;padding:24px 28px}
+aside h2{font-size:30px;text-transform:uppercase}
+.col{margin-top:18px}
+.col h3{font-size:13px;text-transform:uppercase;letter-spacing:.08em;display:flex;justify-content:space-between;border-bottom:2px solid #121212;padding-bottom:6px}
+.empty{color:#555;padding:14px 0;font-size:14px}
+.sign{margin-top:26px;background:#ffd400;border:3px solid #121212;padding:16px 18px}
+.sign .big{font-size:64px;line-height:.9}
+.sign p{font-size:14px;margin-top:6px}
+</style></head><body>
+<header>
+  <div class="brand cond">Hestia</div>
+  <div class="stat"><b class="cond">98</b>deals on the desk</div>
+  <div class="stat"><b class="cond">33</b>sell today</div>
+  <div class="stat"><b class="cond">11</b>scored 6 of 10</div>
+  <div class="actions"><button class="ghost">Add a deal</button><button class="ghost">Score unchecked</button><button>Collect South Florida</button></div>
+</header>
+<main>
+<section class="lane">
+  <h2 class="cond">New from the auctions</h2>
+  <p class="sub">Best score first. Broward, Miami-Dade, and Lee. Collier is not on these calendars.</p>
+  <div class="tabs"><span class="tab on">All 98</span><span class="tab">Tax deeds 28</span><span class="tab">Foreclosures 70</span><span class="tab">Sells today 33</span></div>
+  <table>
+    <thead><tr><th>Score</th><th>Property</th><th>Sale</th><th class="n">Bid</th><th class="n">Tax roll</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr class="sel"><td class="score"><span class="s6">6</span></td><td class="addr"><b>908 NE 17 TER #1-6</b><small>Fort Lauderdale · Broward tax deed</small></td><td>Nov 23</td><td class="n">$73,422</td><td class="n">$978,420</td><td class="why">Two rolls agree · no homestead</td></tr>
+      <tr><td class="score"><span class="s6">6</span></td><td class="addr"><b>1278 SE 7 COURT</b><small>Deerfield Beach · Broward tax deed</small></td><td>Nov 23</td><td class="n">$57,818</td><td class="n">$656,930</td><td class="why">Two rolls agree · comps support</td></tr>
+      <tr><td class="score"><span class="s6">6</span></td><td class="addr"><b>2120 NE 62 CT</b><small>Fort Lauderdale · Broward tax deed</small></td><td>Nov 23</td><td class="n">$75,572</td><td class="n">$600,280</td><td class="why">Two rolls agree · no homestead</td></tr>
+      <tr><td class="score"><span class="s6">6</span></td><td class="addr"><b>1865 S OCEAN DRIVE</b><small>Hallandale Beach · Broward tax deed</small></td><td>Nov 23</td><td class="n">$41,399</td><td class="n">$336,600</td><td class="why">Two rolls agree · comps support</td></tr>
+      <tr><td class="score"><span class="s4">4</span></td><td class="addr"><b>1367 NW 21 ST</b><small>Miami · Miami-Dade tax deed</small></td><td>Nov 12</td><td class="n">$38,261</td><td class="n">$886,213</td><td class="why">One roll · 2023 sale $750,000</td></tr>
+      <tr><td class="score"><span class="s4">4</span></td><td class="addr"><b>8116 PENNY DR</b><small>Lee foreclosure · <span class="tag">Judgment</span></small></td><td><span class="tag red">Today</span></td><td class="n">$91,267</td><td class="n">$134,043</td><td class="why">Two rolls agree · neighbors close</td></tr>
+      <tr><td class="score"><span class="s3">3</span></td><td class="addr"><b>1029 NW 35TH PL</b><small>Lee foreclosure · <span class="tag">Judgment</span></small></td><td><span class="tag red">Today</span></td><td class="n">$474,217</td><td class="n">$334,061</td><td class="why">Judgment is over the roll value</td></tr>
+    </tbody>
+  </table>
+</section>
+<aside>
+  <h2 class="cond">My pipeline</h2>
+  <div class="col"><h3><span>Watching</span><span>0</span></h3><p class="empty">Nothing yet. Watch a deal from the list to start.</p></div>
+  <div class="col"><h3><span>Under contract</span><span>0</span></h3></div>
+  <div class="col"><h3><span>Assigned</span><span>0</span></h3></div>
+  <div class="sign"><div class="big cond">6 / 10</div><p><b>908 NE 17 TER #1-6</b><br>Bid $73,422 · Tax roll $978,420<br>Legal and liens not checked yet.</p><div style="display:flex;gap:8px;margin-top:12px"><button>Watch</button><button class="ghost">Pass</button></div></div>
+</aside>
+</main>
+</body></html>
